@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628"/>
+      <stop offset="100%" style="stop-color:#2e1a0a"/>
+    </linearGradient>
+    <linearGradient id="sandstone" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4734E"/>
+      <stop offset="100%" style="stop-color:#C1440E"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bg)" stroke="#C1440E" stroke-width="2"/>
+  <!-- India Gate simplified -->
+  <rect x="60" y="65" width="80" height="8" rx="2" fill="url(#sandstone)" opacity="0.9"/>
+  <rect x="65" y="55" width="70" height="12" rx="2" fill="url(#sandstone)" opacity="0.85"/>
+  <!-- Central arch -->
+  <path d="M 85 73 L 85 130 Q 100 145 115 130 L 115 73" fill="none" stroke="#C1440E" stroke-width="2" opacity="0.7"/>
+  <path d="M 85 73 Q 100 90 115 73" fill="url(#sandstone)" opacity="0.4"/>
+  <!-- Side pillars -->
+  <rect x="60" y="73" width="10" height="65" fill="url(#sandstone)" opacity="0.6"/>
+  <rect x="130" y="73" width="10" height="65" fill="url(#sandstone)" opacity="0.6"/>
+  <!-- Small arches -->
+  <path d="M 70 85 Q 75 95 80 85" fill="none" stroke="#C1440E" stroke-width="1.5" opacity="0.5"/>
+  <path d="M 120 85 Q 125 95 130 85" fill="none" stroke="#C1440E" stroke-width="1.5" opacity="0.5"/>
+  <!-- Base -->
+  <rect x="55" y="138" width="90" height="5" rx="1" fill="url(#sandstone)" opacity="0.8"/>
+  <rect x="50" y="143" width="100" height="4" rx="1" fill="url(#sandstone)" opacity="0.5"/>
+  <!-- Top canopy -->
+  <path d="M 60 55 L 100 42 L 140 55" fill="none" stroke="#C1440E" stroke-width="2" opacity="0.8"/>
+  <text x="100" y="172" font-family="sans-serif" font-size="9" fill="#C1440E" text-anchor="middle" opacity="0.7">DELHI</text>
+</svg>

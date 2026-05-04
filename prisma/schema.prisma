@@ -1,0 +1,111 @@
+// All University Updates - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// University model - stores university information
+model University {
+  id          String   @id @default(cuid())
+  name        String                               // University name
+  shortName   String   @unique                   // Short name (e.g., GU, MDU, DU)
+  website     String                               // Official website URL
+  state       String                               // State: Bihar, Haryana, Delhi, Uttar Pradesh
+  district    String?                              // District/City location
+  type        String   @default("State")           // Type: State, Central, Private, Deemed
+  description String?                              // Brief description
+  logo        String?                              // Logo URL or emoji
+  color       String   @default("#6366f1")         // Theme color for UI
+  isActive    Boolean  @default(true)              // Whether scraping is active
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  notices     Notice[]                             // Related notices
+
+  @@unique([name, shortName])
+  @@index([state])
+  @@index([district])
+}
+
+// Notice model - stores individual notices from universities
+model Notice {
+  id            String     @id @default(cuid())
+  universityId  String                                // Foreign key to University
+  title         String                                // Notice title
+  description   String?                               // Notice description/content
+  sourceUrl     String?                               // Original URL on university website
+  datePublished DateTime   @default(now())            // Date when notice was published
+  category      String     @default("General")        // Category (Exam, Result, Admission, etc.)
+  isImportant   Boolean    @default(false)            // Marked as important
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  university    University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  @@index([universityId])
+  @@index([datePublished])
+}
+
+// Exam Notification model - stores exam-related notifications
+model ExamNotification {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  sourceUrl   String?
+  examName    String
+  examType    String   @default("NTA")  // NTA, BOARD
+  boardName   String?
+  state       String?
+  category    String   @default("General")
+  examDate    DateTime?
+  lastDate    DateTime?
+  isImportant Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([examType])
+  @@index([examName])
+}
+
+// Admin Post model - stores admin-created posts
+model AdminPost {
+  id          String   @id @default(cuid())
+  title       String
+  content     String?
+  category    String   @default("General")
+  sourceUrl   String?
+  imageUrl    String?
+  isPinned    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Blog Post model - admin writes blog articles for students
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String                                // Blog title
+  slug        String   @unique                     // URL-friendly slug
+  excerpt     String?                               // Short summary for cards
+  content     String                                // Full blog content (markdown/HTML)
+  coverImage  String?                               // Cover image URL
+  author      String   @default("Admin")            // Author name
+  tags        String   @default("")                 // Comma-separated tags
+  category    String   @default("Education")        // Category
+  readTime    String   @default("3 min")            // Estimated read time
+  isPublished Boolean  @default(false)              // Published (public) or Draft
+  views       Int      @default(0)                  // View count
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+  @@index([category])
+  @@index([createdAt])
+}

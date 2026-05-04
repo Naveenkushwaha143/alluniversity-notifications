@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628"/>
+      <stop offset="100%" style="stop-color:#1a0a2e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9933"/>
+      <stop offset="100%" style="stop-color:#FFD700"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bg)" stroke="#FF9933" stroke-width="2"/>
+  <!-- Ashoka Pillar -->
+  <rect x="93" y="60" width="14" height="80" rx="2" fill="url(#gold)" opacity="0.9"/>
+  <!-- Lion Capital (simplified) -->
+  <ellipse cx="100" cy="55" rx="22" ry="8" fill="url(#gold)" opacity="0.8"/>
+  <rect x="85" y="48" width="30" height="8" rx="3" fill="url(#gold)"/>
+  <circle cx="88" cy="44" r="4" fill="url(#gold)"/>
+  <circle cx="100" cy="42" r="4" fill="url(#gold)"/>
+  <circle cx="112" cy="44" r="4" fill="url(#gold)"/>
+  <!-- Wheel (Ashoka Chakra) -->
+  <circle cx="100" cy="150" r="12" fill="none" stroke="#FF9933" stroke-width="1.5" opacity="0.6"/>
+  <circle cx="100" cy="150" r="2" fill="#FF9933" opacity="0.6"/>
+  <!-- Base -->
+  <rect x="82" y="140" width="36" height="6" rx="2" fill="url(#gold)" opacity="0.7"/>
+  <rect x="86" y="146" width="28" height="4" rx="1" fill="url(#gold)" opacity="0.5"/>
+  <!-- Stupa hint -->
+  <path d="M 60 160 Q 60 140 75 130" fill="none" stroke="#FF9933" stroke-width="1" opacity="0.3"/>
+  <path d="M 140 160 Q 140 140 125 130" fill="none" stroke="#FF9933" stroke-width="1" opacity="0.3"/>
+  <text x="100" y="178" font-family="sans-serif" font-size="9" fill="#FF9933" text-anchor="middle" opacity="0.7">BIHAR</text>
+</svg>

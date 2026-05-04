@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a1628"/>
+      <stop offset="100%" style="stop-color:#1a2e0a"/>
+    </linearGradient>
+    <linearGradient id="wheat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#DAA520"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bg)" stroke="#DAA520" stroke-width="2"/>
+  <!-- Wheat wreath -->
+  <g transform="translate(100,100)">
+    <!-- Left wheat -->
+    <g transform="rotate(-120)">
+      <ellipse cx="0" cy="-30" rx="5" ry="10" fill="url(#wheat)" opacity="0.9"/>
+      <ellipse cx="-4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="-4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <ellipse cx="4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <rect x="-1" y="-20" width="2" height="25" fill="#DAA520" opacity="0.7"/>
+    </g>
+    <!-- Right wheat -->
+    <g transform="rotate(-60)">
+      <ellipse cx="0" cy="-30" rx="5" ry="10" fill="url(#wheat)" opacity="0.9"/>
+      <ellipse cx="-4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="-4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <ellipse cx="4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <rect x="-1" y="-20" width="2" height="25" fill="#DAA520" opacity="0.7"/>
+    </g>
+    <!-- Bottom wheat -->
+    <g transform="rotate(180)">
+      <ellipse cx="0" cy="-30" rx="5" ry="10" fill="url(#wheat)" opacity="0.9"/>
+      <ellipse cx="-4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="4" cy="-45" rx="4" ry="8" fill="url(#wheat)" opacity="0.85"/>
+      <ellipse cx="-4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <ellipse cx="4" cy="-58" rx="3" ry="7" fill="url(#wheat)" opacity="0.8"/>
+      <rect x="-1" y="-20" width="2" height="25" fill="#DAA520" opacity="0.7"/>
+    </g>
+    <!-- Center emblem -->
+    <circle cx="0" cy="-5" r="15" fill="none" stroke="#DAA520" stroke-width="1.5" opacity="0.5"/>
+    <text x="0" y="0" font-family="sans-serif" font-size="8" fill="#FFD700" text-anchor="middle" opacity="0.8">KSH</text>
+  </g>
+  <text x="100" y="178" font-family="sans-serif" font-size="9" fill="#DAA520" text-anchor="middle" opacity="0.7">HARYANA</text>
+</svg>

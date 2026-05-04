@@ -1,0 +1,52 @@
+{
+  "name": "All University Updates - Bihar, Haryana, Delhi, UP",
+  "short_name": "UniUpdates",
+  "description": "Latest notices, exam schedules, results & admissions from 125+ universities across Bihar, Haryana, Delhi & UP. Real-time board exam notifications.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait-primary",
+  "categories": ["education", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/logos/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logos/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Notices",
+      "short_name": "Notices",
+      "description": "View latest university notices",
+      "url": "/?view=notices",
+      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Universities",
+      "short_name": "Universities",
+      "description": "Browse all universities",
+      "url": "/?view=universities",
+      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Exams",
+      "short_name": "Exams",
+      "description": "Entrance exam details",
+      "url": "/?view=entrance",
+      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
