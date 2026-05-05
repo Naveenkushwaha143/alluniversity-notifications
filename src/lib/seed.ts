@@ -1,6 +1,51 @@
 import { db } from '@/lib/db';
 import { ADDITIONAL_UNIVERSITIES } from '@/lib/additional-universities';
 
+const DEMO_BLOG_POSTS = [
+  {
+    title: 'University Result Kaise Check Kare: Student Quick Guide',
+    slug: 'university-result-kaise-check-kare',
+    excerpt: 'Result, marksheet aur revaluation notice check karne ke practical steps ek jagah.',
+    content: `University result check karte time students ko sabse pehle official university website open karni chahiye. Result section aksar Examination, Student Corner, Notice Board ya Latest Updates ke andar hota hai.
+
+Roll number, registration number, course, semester aur session ready rakhein. Agar result PDF me aaye to apna roll number browser search se find karein. Agar login portal par result aaye to details carefully fill karein.
+
+Result ke baad marksheet download karke name, roll number, subject code aur marks verify karein. Agar marks me doubt ho to revaluation ya scrutiny notification ki last date miss na karein.`,
+    author: 'All University Team',
+    tags: 'result, marksheet, revaluation, university notice',
+    category: 'Result',
+    readTime: '2 min',
+  },
+  {
+    title: 'Admission Form Bharne Se Pehle Ye Documents Ready Rakhein',
+    slug: 'admission-form-documents-checklist',
+    excerpt: 'UG, PG aur entrance admission forms ke liye common document checklist.',
+    content: `Admission form bharne se pehle documents ready hone se last date par stress kam hota hai. Students ko passport size photo, signature, Aadhaar card, class 10 marksheet, class 12 marksheet, graduation marksheet, caste certificate, income certificate aur domicile certificate ready rakhna chahiye.
+
+Photo aur signature ka size university ke instruction ke hisab se compress karein. Name, date of birth aur category details certificates se match honi chahiye.
+
+Payment karne ke baad application form aur fee receipt ka PDF save karein. Counseling ya document verification me ye receipt kaam aati hai.`,
+    author: 'All University Team',
+    tags: 'admission, documents, ug admission, pg admission',
+    category: 'Admission',
+    readTime: '3 min',
+  },
+  {
+    title: 'Exam Date Sheet Aur Admit Card Notice Miss Na Karne Ka Tarika',
+    slug: 'exam-date-sheet-admit-card-alerts',
+    excerpt: 'Exam schedule, admit card aur center notice track karne ka simple routine.',
+    content: `Exam season me date sheet, admit card, center list aur practical exam notices bahut fast update hote hain. Isliye students ko official website ke Examination aur Notice Board section ko regularly check karna chahiye.
+
+Course, semester aur subject wise date sheet alag-alag PDF me aa sakti hai. Date sheet download karke subject code match karein, kyunki same subject name ke multiple paper codes ho sakte hain.
+
+Admit card release hone ke baad print nikal kar photo, signature, exam center aur reporting time verify karein. Agar detail galat ho to college ya university exam branch se turant contact karein.`,
+    author: 'All University Team',
+    tags: 'exam, date sheet, admit card, exam notice',
+    category: 'Exam Tips',
+    readTime: '2 min',
+  },
+];
+
 // Comprehensive university data for Bihar, Haryana, Delhi, Uttar Pradesh
 const UNIVERSITIES: {
   name: string;
@@ -185,5 +230,36 @@ export async function seedUniversities() {
   }
 
   console.log(`✅ Seed complete: ${added} new universities added, ${skipped} already existed.`);
-  return { added, skipped, total: allUniversities.length };
+  const blogPosts = await seedDemoBlogPosts();
+
+  return { added, skipped, total: allUniversities.length, blogPosts };
+}
+
+async function seedDemoBlogPosts() {
+  let added = 0;
+  let skipped = 0;
+
+  for (const post of DEMO_BLOG_POSTS) {
+    const existing = await db.blogPost.findUnique({
+      where: { slug: post.slug },
+    });
+
+    if (existing) {
+      skipped++;
+      continue;
+    }
+
+    await db.blogPost.create({
+      data: {
+        ...post,
+        coverImage: null,
+        isPublished: true,
+        isActive: true,
+      },
+    });
+
+    added++;
+  }
+
+  return { added, skipped, total: DEMO_BLOG_POSTS.length };
 }

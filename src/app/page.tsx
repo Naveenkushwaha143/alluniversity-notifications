@@ -1198,6 +1198,10 @@ export default function Home() {
     }
   };
 
+  const scrollToAdminSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const handleScrape = async () => {
     try {
       setScraping(true);
@@ -3888,7 +3892,7 @@ export default function Home() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Card className="glass-card rounded-xl border border-white/5">
             <CardContent className="p-4 text-center">
               <p className="text-white font-bold text-2xl">{universities.length}</p>
@@ -3907,6 +3911,14 @@ export default function Home() {
               <p className="text-white/35 text-xs">Posts</p>
             </CardContent>
           </Card>
+          <button
+            type="button"
+            onClick={() => scrollToAdminSection('admin-blog-posts')}
+            className="glass-card rounded-xl border border-white/5 p-4 text-center hover:bg-white/8 transition-colors"
+          >
+            <p className="text-white font-bold text-2xl">{blogPosts.length}</p>
+            <p className="text-white/35 text-xs">Blog Posts</p>
+          </button>
           <Card className="glass-card rounded-xl border border-white/5">
             <CardContent className="p-4 text-center">
               <p className={`font-bold text-2xl ${wsConnected ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -3915,6 +3927,29 @@ export default function Home() {
               <p className="text-white/35 text-xs">WebSocket</p>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => scrollToAdminSection('admin-announcement-posts')}
+            className="shrink-0 text-white/60 hover:text-white hover:bg-white/10 border border-white/10"
+          >
+            <Megaphone className="w-3.5 h-3.5 mr-1.5" />
+            Announcement Posts
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => scrollToAdminSection('admin-blog-posts')}
+            className="shrink-0 text-pink-200 hover:text-pink-100 hover:bg-pink-500/15 border border-pink-500/20"
+          >
+            <Newspaper className="w-3.5 h-3.5 mr-1.5" />
+            Blog Posts
+          </Button>
         </div>
 
         {/* Scrape Button */}
@@ -3941,7 +3976,7 @@ export default function Home() {
         </Card>
 
         {/* Create Post Form */}
-        <Card className="glass-card rounded-xl border border-white/5">
+        <Card id="admin-announcement-posts" className="glass-card rounded-xl border border-white/5 scroll-mt-24">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-cyan-400" />
@@ -4089,12 +4124,12 @@ export default function Home() {
         </Card>
 
         {/* ═══ Blog Post Management ═══ */}
-        <Card className="glass-card rounded-xl border border-white/5">
+        <Card id="admin-blog-posts" className="glass-card rounded-xl border border-white/5 scroll-mt-24">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
                 <Newspaper className="w-4 h-4 text-pink-400" />
-                Blog Posts
+                Blog Posts ({blogPosts.length})
               </CardTitle>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
