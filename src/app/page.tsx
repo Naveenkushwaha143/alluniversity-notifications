@@ -867,7 +867,7 @@ export default function Home() {
 
   const fetchLiveNotifications = useCallback(async (countUnread = false) => {
     try {
-      const res = await fetch('/api/live-notifications?limit=60');
+      const res = await fetch('/api/live-notifications?limit=50');
       const data = await res.json();
       if (data.success && Array.isArray(data.data)) {
         setRtNotifications((prev) => {
@@ -1489,11 +1489,22 @@ export default function Home() {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
+    const userAgent = navigator.userAgent || '';
+    const isAndroid = /Android/i.test(userAgent);
+    const isMobileBrowser = /Mobi|iPhone|iPad|iPod/i.test(userAgent);
+    const isTouchMobile = navigator.maxTouchPoints > 0
+      && window.matchMedia('(max-width: 820px)').matches;
+    const canShowMobileInstallPrompt = isAndroid || isMobileBrowser || isTouchMobile;
+
+    if (!canShowMobileInstallPrompt) {
+      return;
+    }
+
     // Check if already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches
       || (window.navigator as any).standalone === true;
     if (isStandalone) {
-      setAppInstalled(true);
+      queueMicrotask(() => setAppInstalled(true));
       return;
     }
 
@@ -1510,7 +1521,9 @@ export default function Home() {
       e.preventDefault();
       setDeferredPrompt(e);
       // Auto-show banner after 3 seconds
-      setTimeout(() => setShowInstallBanner(true), 3000);
+      setTimeout(() => {
+        setShowInstallBanner(true);
+      }, 3000);
     };
 
     const handleAppInstalled = () => {

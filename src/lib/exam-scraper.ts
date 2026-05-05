@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { scrapeUniversityWebsite } from '@/lib/website-scraper';
+import { cleanupOldExamNotifications } from '@/lib/notification-cleanup';
 
 type ExamType = 'NTA' | 'BOARD';
 
@@ -133,6 +134,10 @@ export async function scrapeAndStoreExamNotifications(
 
       newCount++;
     }
+  }
+
+  if (newCount > 0) {
+    await cleanupOldExamNotifications();
   }
 
   return { newCount, targetsChecked: targets.length };

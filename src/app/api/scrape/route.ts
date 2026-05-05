@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scrapeUniversityWebsite, type ScraperUniversity } from '@/lib/website-scraper';
 import { scrapeAndStoreExamNotifications } from '@/lib/exam-scraper';
+import { cleanupStoredNotifications } from '@/lib/notification-cleanup';
 
 // ── Global Rate Limit Cooldown ──
 // Shared across bulk + single scrape to prevent API exhaustion
@@ -94,13 +95,12 @@ export async function POST() {
       }
     }
 
-    // After scraping, cleanup old notices (keep only 30 per university)
-    const cleanupResult = await cleanupOldNotices();
-
     const examResult = await scrapeAndStoreExamNotifications('ALL', {
       limit: 6,
       maxResultsPerTarget: 2,
     });
+
+    const cleanupResult = await cleanupStoredNotifications();
 
     // Auto-create admin posts from best new notices
     let autoPostCount = 0;
@@ -114,7 +114,10 @@ export async function POST() {
       newNotices: totalNewNotices,
       newExamNotifications: examResult.newCount,
       newAdminPosts: autoPostCount,
-      deletedNotices: cleanupResult,
+      deletedNotifications: cleanupResult.totalDeleted,
+      deletedNotices: cleanupResult.noticesDeleted,
+      deletedExamNotifications: cleanupResult.examNotificationsDeleted,
+      maxStoredNotifications: cleanupResult.maxStored,
       universitiesScraped,
       examTargetsChecked: examResult.targetsChecked,
       batchTotal: batch.length,
@@ -303,32 +306,4 @@ async function autoCreateAdminPosts(): Promise<number> {
     console.error('Error auto-creating admin posts:', error);
     return 0;
   }
-}
-
-// Cleanup old notices - keep only 30 per university
-async function cleanupOldNotices(): Promise<number> {
-  const MAX_NOTICES = 30;
-  const universities = await db.university.findMany({
-    select: { id: true, name: true }
-  });
-
-  let totalDeleted = 0;
-
-  for (const uni of universities) {
-    const allNotices = await db.notice.findMany({
-      where: { universityId: uni.id },
-      orderBy: { datePublished: 'desc' },
-      select: { id: true }
-    });
-
-    if (allNotices.length > MAX_NOTICES) {
-      const toDelete = allNotices.slice(MAX_NOTICES).map(n => n.id);
-      const result = await db.notice.deleteMany({
-        where: { id: { in: toDelete } }
-      });
-      totalDeleted += result.count;
-    }
-  }
-
-  return totalDeleted;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { cleanupStoredNotifications } from '@/lib/notification-cleanup';
 
 // GET /api/notices - Get notices with filtering
 export async function GET(request: NextRequest) {
@@ -82,33 +83,12 @@ export async function GET(request: NextRequest) {
 // DELETE /api/notices - Clean up old notices
 export async function DELETE() {
   try {
-    const universities = await db.university.findMany({
-      select: { id: true, name: true }
-    });
-
-    let totalDeleted = 0;
-    const MAX_NOTICES = 30;
-
-    for (const uni of universities) {
-      const allNotices = await db.notice.findMany({
-        where: { universityId: uni.id },
-        orderBy: { datePublished: 'desc' },
-        select: { id: true }
-      });
-
-      if (allNotices.length > MAX_NOTICES) {
-        const toDelete = allNotices.slice(MAX_NOTICES).map(n => n.id);
-        const result = await db.notice.deleteMany({
-          where: { id: { in: toDelete } }
-        });
-        totalDeleted += result.count;
-      }
-    }
+    const cleanupResult = await cleanupStoredNotifications();
 
     return NextResponse.json({
       success: true,
-      message: `Cleanup complete! Deleted ${totalDeleted} old notices.`,
-      totalDeleted
+      message: `Cleanup complete! Deleted ${cleanupResult.totalDeleted} old notifications.`,
+      ...cleanupResult,
     });
   } catch (error) {
     console.error("Error cleaning up notices:", error);

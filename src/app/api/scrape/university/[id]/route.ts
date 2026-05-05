@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scrapeUniversityWebsite } from '@/lib/website-scraper';
+import { MAX_STORED_NOTIFICATIONS, cleanupOldUniversityNotices } from '@/lib/notification-cleanup';
 
 let globalRateLimitUntil = 0;
 const COOLDOWN_DURATION = 10 * 60 * 1000;
@@ -158,16 +159,8 @@ export async function POST(
       newCount++;
     }
 
-    const allNotices = await db.notice.findMany({
-      where: { universityId: university.id },
-      orderBy: { datePublished: 'desc' },
-      select: { id: true },
-    });
-
-    if (allNotices.length > 30) {
-      const toDelete = allNotices.slice(30).map(n => n.id);
-      await db.notice.deleteMany({ where: { id: { in: toDelete } } });
-    }
+    const deletedOldNotices = await cleanupOldUniversityNotices(university.id);
+    const totalNotices = await db.notice.count({ where: { universityId: university.id } });
 
     return NextResponse.json({
       success: true,
@@ -175,9 +168,11 @@ export async function POST(
         ? `${university.shortName}: ${newCount} naye notifications mile!`
         : `${university.shortName}: Already up to date!`,
       newNotices: newCount,
+      deletedOldNotices,
+      maxStoredNotifications: MAX_STORED_NOTIFICATIONS,
       universityName: university.name,
       universityId: university.id,
-      totalNotices: Math.min(allNotices.length, 30),
+      totalNotices,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { MAX_STORED_NOTIFICATIONS } from '@/lib/notification-cleanup';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '60'), 100);
+    const limit = Math.min(
+      parseInt(searchParams.get('limit') || String(MAX_STORED_NOTIFICATIONS)),
+      MAX_STORED_NOTIFICATIONS
+    );
 
     const [notices, exams] = await Promise.all([
       db.notice.findMany({
