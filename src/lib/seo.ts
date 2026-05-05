@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: "All University Updates",
   shortName: "UniUpdates",
-  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  url: process.env.NEXT_PUBLIC_SITE_URL || "https://alluniversity.org",
   title: "All University Updates - University Notices, Results, Admissions and Exams",
   description:
     "Latest university notices, exam dates, results, admission updates, scholarships, admit cards, board notifications and entrance exam alerts for students in Bihar, Uttar Pradesh, Haryana, Delhi and across India.",
