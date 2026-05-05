@@ -1,14 +1,14 @@
 {
-  "name": "All University Updates - Bihar, Haryana, Delhi, UP",
+  "name": "All University Updates - India Student Notices, Results and Exams",
   "short_name": "UniUpdates",
-  "description": "Latest notices, exam schedules, results & admissions from 125+ universities across Bihar, Haryana, Delhi & UP. Real-time board exam notifications.",
+  "description": "Latest university notices, exam dates, results, admissions, scholarships, board notifications and entrance exam alerts for students in Bihar, Uttar Pradesh, Haryana, Delhi and India.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a1a",
   "theme_color": "#06b6d4",
   "orientation": "portrait-primary",
-  "categories": ["education", "utilities"],
+  "categories": ["education", "utilities", "news"],
   "lang": "en",
   "dir": "ltr",
   "icons": [

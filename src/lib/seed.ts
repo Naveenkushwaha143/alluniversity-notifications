@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import { ADDITIONAL_UNIVERSITIES } from '@/lib/additional-universities';
 
 // Comprehensive university data for Bihar, Haryana, Delhi, Uttar Pradesh
 const UNIVERSITIES: {
@@ -156,8 +157,9 @@ const UNIVERSITIES: {
 export async function seedUniversities() {
   let added = 0;
   let skipped = 0;
+  const allUniversities = [...UNIVERSITIES, ...ADDITIONAL_UNIVERSITIES];
 
-  for (const uni of UNIVERSITIES) {
+  for (const uni of allUniversities) {
     const existing = await db.university.findFirst({
       where: { shortName: uni.shortName }
     });
@@ -183,5 +185,5 @@ export async function seedUniversities() {
   }
 
   console.log(`✅ Seed complete: ${added} new universities added, ${skipped} already existed.`);
-  return { added, skipped, total: UNIVERSITIES.length };
+  return { added, skipped, total: allUniversities.length };
 }
