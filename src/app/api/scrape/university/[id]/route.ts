@@ -38,7 +38,7 @@ export async function GET() {
     cooldownMinutes: Math.ceil(cooldownRemaining / 60000),
     message: cooldownRemaining > 0
       ? `API cooldown mein hai. ${Math.ceil(cooldownRemaining / 60000)} minute baad try karein.`
-      : 'Scrape ready!',
+      : 'Refresh ready!',
   });
 }
 
@@ -183,7 +183,7 @@ export async function POST(
 
     console.error('Single scrape error:', error);
     return NextResponse.json(
-      { success: false, message: 'Scraping mein error aaya. Thodi der baad try karein.', error: message },
+      { success: false, message: 'Refresh mein error aaya. Thodi der baad try karein.', error: message },
       { status: 500 }
     );
   }

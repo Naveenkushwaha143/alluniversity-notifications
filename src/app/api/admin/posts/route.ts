@@ -32,20 +32,29 @@ export async function GET(request: NextRequest) {
         { createdAt: 'desc' },
       ],
       take: limit,
+      include: {
+        _count: {
+          select: { comments: true },
+        },
+      },
     });
 
     // Only include admin-only fields when authenticated
     const isAuth = isAuthenticated(request.headers.get('cookie'));
 
-    const sanitizedPosts = isAuth
-      ? posts
-      : posts.map(post => ({
+    const sanitizedPosts = posts.map(post => ({
           id: post.id,
           title: post.title,
           content: post.content,
           category: post.category,
           sourceUrl: post.sourceUrl,
           imageUrl: post.imageUrl,
+          likes: post.likes,
+          commentsCount: post._count.comments,
+          ...(isAuth ? {
+            isPinned: post.isPinned,
+            isActive: post.isActive,
+          } : {}),
           createdAt: post.createdAt,
           updatedAt: post.updatedAt,
         }));

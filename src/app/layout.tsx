@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: "/logos/pwa-icon-512.png",
+        url: "/logo.svg",
         width: 512,
         height: 512,
         alt: siteConfig.name,
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
-    images: ["/logos/pwa-icon-512.png"],
+    images: ["/logo.svg"],
   },
   appleWebApp: {
     capable: true,
@@ -110,29 +110,32 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
           try {
-            var t = localStorage.getItem('theme');
-            if (t === 'light') { document.documentElement.classList.add('light'); }
-            else if (t === 'dark' || !t) { document.documentElement.classList.add('dark'); }
-            else { document.documentElement.classList.add(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
-          } catch(e) { document.documentElement.classList.add('dark'); }
+            var storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'dark') {
+              document.documentElement.classList.remove('light');
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+              document.documentElement.classList.add('light');
+            }
+          } catch(e) { document.documentElement.classList.add('light'); }
         `,
           }}
         />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#06b6d4" />
+        <meta name="theme-color" content="#f8fbff" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content={siteConfig.shortName} />
         <meta name="application-name" content={siteConfig.shortName} />
-        <meta name="msapplication-TileColor" content="#06b6d4" />
+        <meta name="msapplication-TileColor" content="#f8fbff" />
         <meta name="classification" content="Education, University Notices, Exam Updates, Student Alerts" />
         <meta name="coverage" content="India" />
         <meta name="distribution" content="global" />
         <meta name="rating" content="general" />
-        <link rel="apple-touch-icon" href="/logos/pwa-icon-192.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/logos/pwa-icon-192.png" />
-        <link rel="icon" type="image/png" sizes="512x512" href="/logos/pwa-icon-512.png" />
+        <link rel="apple-touch-icon" href="/logo.svg" />
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -141,7 +144,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={true} disableTransitionOnChange={true}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={true}>
           {children}
           <ThemeToaster />
         </ThemeProvider>

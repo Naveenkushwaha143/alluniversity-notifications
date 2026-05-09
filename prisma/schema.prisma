@@ -81,10 +81,30 @@ model AdminPost {
   category    String   @default("General")
   sourceUrl   String?
   imageUrl    String?
+  likes       Int      @default(0)
   isPinned    Boolean  @default(false)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  comments    AdminPostComment[]
+}
+
+// Admin Post Comment model - stores student comments on admin announcements
+model AdminPostComment {
+  id         String   @id @default(cuid())
+  postId     String
+  name       String
+  email      String?
+  message    String
+  isApproved Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  post       AdminPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([createdAt])
 }
 
 // Blog Post model - admin writes blog articles for students
@@ -100,12 +120,32 @@ model BlogPost {
   category    String   @default("Education")        // Category
   readTime    String   @default("3 min")            // Estimated read time
   isPublished Boolean  @default(false)              // Published (public) or Draft
+  likes       Int      @default(0)                  // Student likes
   views       Int      @default(0)                  // View count
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  comments    BlogComment[]
+
   @@index([isPublished])
   @@index([category])
+  @@index([createdAt])
+}
+
+// Blog Comment model - stores student comments on blog posts
+model BlogComment {
+  id        String   @id @default(cuid())
+  postId    String
+  name      String
+  email     String?
+  message   String
+  isApproved Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
   @@index([createdAt])
 }

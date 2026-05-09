@@ -65,6 +65,10 @@ export async function GET(request: NextRequest) {
       success: true,
       total: liveItems.length,
       data: liveItems,
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=15, stale-while-revalidate=60',
+      },
     });
   } catch (error) {
     console.error('Error fetching live notifications:', error);

@@ -76,35 +76,33 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const universities = await db.university.findMany({
-      where,
-      include: {
-        _count: {
-          select: { notices: true }
-        }
-      },
-      orderBy: [{ state: 'asc' }, { district: 'asc' }, { createdAt: 'asc' }],
-      take: limit,
-    });
-
-    // Get state-wise counts
-    const stateCounts = await db.university.groupBy({
-      by: ['state'],
-      where: { isActive: true },
-      _count: { id: true },
-    });
+    const [universities, stateCounts, districtData] = await Promise.all([
+      db.university.findMany({
+        where,
+        include: {
+          _count: {
+            select: { notices: true }
+          }
+        },
+        orderBy: [{ state: 'asc' }, { district: 'asc' }, { createdAt: 'asc' }],
+        take: limit,
+      }),
+      db.university.groupBy({
+        by: ['state'],
+        where: { isActive: true },
+        _count: { id: true },
+      }),
+      db.university.groupBy({
+        by: ['state', 'district'],
+        where: { isActive: true, district: { not: null } },
+        _count: { id: true },
+      }),
+    ]);
 
     const stateSummary = stateCounts.map(s => ({
       state: s.state,
       count: s._count.id,
     }));
-
-    // Get districts per state
-    const districtData = await db.university.groupBy({
-      by: ['state', 'district'],
-      where: { isActive: true, district: { not: null } },
-      _count: { id: true },
-    });
 
     const districtsByState: Record<string, { name: string; count: number }[]> = {};
     for (const d of districtData) {
@@ -121,6 +119,10 @@ export async function GET(request: NextRequest) {
       stateSummary,
       districtsByState,
       data: universities
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+      },
     });
   } catch (error) {
     console.error("Error fetching universities:", error);

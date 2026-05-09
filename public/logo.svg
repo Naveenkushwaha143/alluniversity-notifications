@@ -1,29 +1,97 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 viewBox="0 0 30 30" style="enable-background:new 0 0 30 30;" xml:space="preserve">
-<defs>
-  <style type="text/css">
-    .st194{fill:#2D2D2D;stroke:#FFFFFF;stroke-width:0.6317;stroke-miterlimit:10;}
-    .st23{fill:#FFFFFF;}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">All University</title>
+  <desc id="desc">All University official seal logo</desc>
+  <defs>
+    <radialGradient id="blueCore" cx="50%" cy="42%" r="68%">
+      <stop offset="0%" stop-color="#0c4f8f"/>
+      <stop offset="62%" stop-color="#083a73"/>
+      <stop offset="100%" stop-color="#061936"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="18%" y1="8%" x2="78%" y2="92%">
+      <stop offset="0%" stop-color="#fff2a6"/>
+      <stop offset="34%" stop-color="#d5a94f"/>
+      <stop offset="68%" stop-color="#9f7228"/>
+      <stop offset="100%" stop-color="#f1ce73"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="20%" y1="0%" x2="90%" y2="100%">
+      <stop offset="0%" stop-color="#d5e88a"/>
+      <stop offset="100%" stop-color="#1e7a48"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000000" flood-opacity=".45"/>
+    </filter>
+    <path id="topArc" d="M 99 260 A 157 157 0 0 1 413 260"/>
+    <path id="bottomArc" d="M 414 282 A 158 158 0 0 1 98 282"/>
+  </defs>
 
-    .z-breathe {
-      animation: breathe 2.5s ease-in-out infinite;
-    }
+  <circle cx="256" cy="256" r="238" fill="#05070d" filter="url(#softShadow)"/>
+  <circle cx="256" cy="256" r="229" fill="url(#gold)"/>
+  <circle cx="256" cy="256" r="217" fill="#071228"/>
+  <circle cx="256" cy="256" r="204" fill="url(#blueCore)" stroke="url(#gold)" stroke-width="6"/>
+  <circle cx="256" cy="256" r="149" fill="#082d5b" stroke="url(#gold)" stroke-width="5"/>
+  <circle cx="256" cy="256" r="118" fill="#0a3d76" stroke="#e2bf65" stroke-width="4"/>
 
-    @keyframes breathe {
-      0%, 100% { opacity: 0.7; }
-      50% { opacity: 1; }
-    }
-  </style>
-</defs>
+  <text font-family="Georgia, Times New Roman, serif" font-weight="800" font-size="44" letter-spacing="5" fill="#f6d77c" stroke="#172032" stroke-width="1.2">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">ALL UNIVERSITY</textPath>
+  </text>
+  <text font-family="Inter, Arial, sans-serif" font-weight="700" font-size="19" letter-spacing="1.5" fill="#ffffff">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle" dy="44">www.alluniversity.org</textPath>
+  </text>
+  <text font-family="Georgia, Times New Roman, serif" font-weight="700" font-size="24" letter-spacing="1.4" fill="#d9b35b">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">Bihar . UP . Delhi . Haryana Portal</textPath>
+  </text>
 
-<g>
-  <path class="st194" d="M24.51,28.51H5.49c-2.21,0-4-1.79-4-4V5.49c0-2.21,1.79-4,4-4h19.03c2.21,0,4,1.79,4,4v19.03
-    C28.51,26.72,26.72,28.51,24.51,28.51z"/>
-  <g class="z-breathe">
-    <path class="st23" d="M15.47,7.1l-1.3,1.85c-0.2,0.29-0.54,0.47-0.9,0.47h-7.1V7.09C6.16,7.1,15.47,7.1,15.47,7.1z"/>
-    <polygon class="st23" points="24.3,7.1 13.14,22.91 5.7,22.91 16.86,7.1"/>
-    <path class="st23" d="M14.53,22.91l1.31-1.86c0.2-0.29,0.54-0.47,0.9-0.47h7.09v2.33H14.53z"/>
+  <g fill="url(#gold)" stroke="#2b2130" stroke-width="2">
+    <path d="M102 222l8 17 19 3-14 13 4 19-17-9-17 9 4-19-14-13 19-3z"/>
+    <path d="M410 222l8 17 19 3-14 13 4 19-17-9-17 9 4-19-14-13 19-3z"/>
+    <path d="M92 286l7 15 17 3-12 12 3 17-15-8-15 8 3-17-12-12 17-3z"/>
+    <path d="M420 286l7 15 17 3-12 12 3 17-15-8-15 8 3-17-12-12 17-3z"/>
   </g>
-</g>
+
+  <g fill="none" stroke="url(#leaf)" stroke-width="8" stroke-linecap="round">
+    <path d="M160 343c-38-49-41-111-10-160"/>
+    <path d="M352 343c38-49 41-111 10-160"/>
+  </g>
+  <g fill="url(#leaf)" stroke="#d7b15f" stroke-width="1.5">
+    <ellipse cx="144" cy="326" rx="8" ry="20" transform="rotate(-38 144 326)"/>
+    <ellipse cx="132" cy="294" rx="7" ry="18" transform="rotate(-58 132 294)"/>
+    <ellipse cx="132" cy="258" rx="7" ry="18" transform="rotate(-82 132 258)"/>
+    <ellipse cx="144" cy="222" rx="7" ry="18" transform="rotate(-122 144 222)"/>
+    <ellipse cx="368" cy="326" rx="8" ry="20" transform="rotate(38 368 326)"/>
+    <ellipse cx="380" cy="294" rx="7" ry="18" transform="rotate(58 380 294)"/>
+    <ellipse cx="380" cy="258" rx="7" ry="18" transform="rotate(82 380 258)"/>
+    <ellipse cx="368" cy="222" rx="7" ry="18" transform="rotate(122 368 222)"/>
+  </g>
+
+  <path d="M196 174h120l18 22v121l-78 42-78-42V196z" fill="#0a2b55" stroke="url(#gold)" stroke-width="6"/>
+  <path d="M211 193h90l14 16v94l-59 32-59-32v-94z" fill="#103f78" stroke="#e8c86f" stroke-width="3"/>
+
+  <g stroke="url(#gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M256 278V174"/>
+    <path d="M256 228c-21-24-46-26-67-5"/>
+    <path d="M256 228c21-24 46-26 67-5"/>
+    <path d="M256 255c-18-18-39-19-57-3"/>
+    <path d="M256 255c18-18 39-19 57-3"/>
+    <path d="M256 280c-14-12-30-13-45-2"/>
+    <path d="M256 280c14-12 30-13 45-2"/>
+  </g>
+  <circle cx="256" cy="174" r="8" fill="#d9b35b"/>
+
+  <g fill="url(#gold)" stroke="#3f2d16" stroke-width="2">
+    <path d="M202 309h67c10 0 18 8 18 18v4h-72c-10 0-18-8-18-18 0-2 2-4 5-4z"/>
+    <path d="M210 286h63c10 0 18 8 18 18v4h-68c-10 0-18-8-18-18 0-2 2-4 5-4z"/>
+    <path d="M294 279h45v53h-45z"/>
+    <path d="M288 267h58v13h-58z"/>
+    <path d="M309 247h17v20h-17z"/>
+    <path d="M315 235h5l15 12h-35z"/>
+    <path d="M181 274h16v58h-16z"/>
+    <path d="M176 262h26v12h-26z"/>
+    <path d="M183 244h12v18h-12z"/>
+  </g>
+
+  <g fill="url(#gold)" stroke="#352514" stroke-width="2">
+    <circle cx="256" cy="389" r="8"/>
+    <path d="M256 389h63"/>
+    <path d="M319 389l11-10 11 10-11 10z"/>
+  </g>
 </svg>

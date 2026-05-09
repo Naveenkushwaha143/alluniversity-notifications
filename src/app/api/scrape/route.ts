@@ -110,7 +110,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `Scraping complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Scraped ${universitiesScraped}/${batch.length} universities, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts.`,
+      message: `Refresh complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Checked ${universitiesScraped}/${batch.length} universities, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts.`,
       newNotices: totalNewNotices,
       newExamNotifications: examResult.newCount,
       newAdminPosts: autoPostCount,
@@ -130,7 +130,7 @@ export async function POST() {
   } catch (error) {
     console.error("Scraping error:", error);
     return NextResponse.json(
-      { success: false, message: "Scraping failed", error: String(error) },
+      { success: false, message: "Refresh failed", error: String(error) },
       { status: 500 }
     );
   }
@@ -144,8 +144,8 @@ export async function GET() {
     cooldownRemaining: remaining,
     cooldownMinutes: Math.ceil(remaining / 60000),
     message: remaining > 0
-      ? `API cooldown mein hai. ${Math.ceil(remaining / 60000)} minute baad scrape available hai.`
-      : 'Scrape available - ready to go!',
+      ? `API cooldown mein hai. ${Math.ceil(remaining / 60000)} minute baad refresh available hai.`
+      : 'Refresh available - ready to go!',
   });
 }
 

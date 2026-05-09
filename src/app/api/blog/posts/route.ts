@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { isAuthenticated } from '@/lib/admin-auth';
+import { MAX_STORED_BLOG_POSTS, cleanupOldBlogPosts } from '@/lib/blog-cleanup';
 
 // Helper: require admin auth
 async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
@@ -28,7 +29,8 @@ export async function GET(request: NextRequest) {
     const all = searchParams.get('all') === 'true';
     const category = searchParams.get('category');
     const tag = searchParams.get('tag');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const requestedLimit = parseInt(searchParams.get('limit') || String(MAX_STORED_BLOG_POSTS));
+    const limit = Math.min(requestedLimit, MAX_STORED_BLOG_POSTS);
     const page = parseInt(searchParams.get('page') || '1');
     const skip = (page - 1) * limit;
 
@@ -48,6 +50,11 @@ export async function GET(request: NextRequest) {
     const [posts, total] = await Promise.all([
       db.blogPost.findMany({
         where,
+        include: {
+          _count: {
+            select: { comments: true },
+          },
+        },
         orderBy: [{ isPublished: 'desc' }, { createdAt: 'desc' }],
         take: limit,
         skip,
@@ -60,7 +67,10 @@ export async function GET(request: NextRequest) {
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      data: posts,
+      data: posts.map((post) => ({
+        ...post,
+        commentsCount: post._count.comments,
+      })),
     });
   } catch (error) {
     console.error('Error fetching blog posts:', error);
@@ -102,7 +112,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, message: 'Blog post created', data: post }, { status: 201 });
+    const deletedOldPosts = await cleanupOldBlogPosts();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Blog post created',
+      deletedOldPosts,
+      maxStoredBlogPosts: MAX_STORED_BLOG_POSTS,
+      data: post,
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating blog post:', error);
     return NextResponse.json({ success: false, message: 'Failed to create post' }, { status: 500 });
@@ -138,8 +156,15 @@ export async function PUT(request: NextRequest) {
     if (typeof isActive === 'boolean') updateData.isActive = isActive;
 
     const post = await db.blogPost.update({ where: { id }, data: updateData });
+    const deletedOldPosts = await cleanupOldBlogPosts();
 
-    return NextResponse.json({ success: true, message: 'Blog post updated', data: post });
+    return NextResponse.json({
+      success: true,
+      message: 'Blog post updated',
+      deletedOldPosts,
+      maxStoredBlogPosts: MAX_STORED_BLOG_POSTS,
+      data: post,
+    });
   } catch (error) {
     console.error('Error updating blog post:', error);
     return NextResponse.json({ success: false, message: 'Failed to update post' }, { status: 500 });

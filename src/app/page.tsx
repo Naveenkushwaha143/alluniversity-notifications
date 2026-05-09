@@ -4,16 +4,16 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
 import {
-  GraduationCap, Bell, ExternalLink, Search, ChevronDown,
+  Bell, ExternalLink, Search, ChevronDown,
   ChevronRight, ChevronUp, Loader2, Trash2, Pin, PinOff,
   LogOut, Home as HomeIcon, Building2, BookOpen, Calendar, FileText,
-  Menu, X, Filter, Star, MapPin, Globe, Zap,
+  Menu, X, Filter, Star, MapPin, Globe, Zap, RefreshCw, Sun, Moon,
   Upload, ArrowLeft, Clock, Tag, Shield,
   User, Lock, CheckCircle2, TrendingUp, Award, Megaphone,
   Wifi, WifiOff, Briefcase, Newspaper, Settings,
-  Eye, EyeOff, Download,
-  Sun, Moon, Monitor,
+  Eye, EyeOff, Download, MessageCircle, Send, Heart,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,15 +22,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import {
-  Sheet, SheetContent, SheetTrigger, SheetTitle,
-} from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,8 +89,21 @@ interface AdminPost {
   category: string;
   sourceUrl: string | null;
   imageUrl: string | null;
+  likes: number;
+  commentsCount: number;
   isPinned: boolean;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminPostComment {
+  id: string;
+  postId: string;
+  name: string;
+  email: string | null;
+  message: string;
+  isApproved: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -111,8 +120,21 @@ interface BlogPost {
   category: string;
   readTime: string;
   isPublished: boolean;
+  likes: number;
+  commentsCount: number;
   views: number;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BlogComment {
+  id: string;
+  postId: string;
+  name: string;
+  email: string | null;
+  message: string;
+  isApproved: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -160,6 +182,7 @@ type ViewType = 'home' | 'universities' | 'notices' | 'entrance' | 'board' | 'ad
    ═══════════════════════════════════════════════════════════════ */
 
 const STATES = ['Bihar', 'Haryana', 'Delhi', 'Uttar Pradesh'] as const;
+const PUBLIC_VIEWS: ViewType[] = ['home', 'universities', 'notices', 'entrance', 'board'];
 
 const STATE_META: Record<string, { label: string; color: string; gradient: string; logo: string; stateKey: string; border: string; bg: string; badge: string }> = {
   Bihar: {
@@ -569,6 +592,18 @@ function normalizeBlogPost(post: BlogPost): BlogPost {
     ...normalized,
     excerpt: normalized.excerpt || null,
     coverImage: normalized.coverImage || null,
+    likes: Number(post.likes || 0),
+    commentsCount: Number(post.commentsCount || 0),
+  };
+}
+
+function normalizeAdminPost(post: AdminPost): AdminPost {
+  return {
+    ...post,
+    likes: Number(post.likes || 0),
+    commentsCount: Number(post.commentsCount || 0),
+    isPinned: Boolean(post.isPinned),
+    isActive: post.isActive !== false,
   };
 }
 
@@ -585,11 +620,75 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+type ApiResponse<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T;
+  [key: string]: unknown;
+};
+
+async function fetchJson<T>(url: string, options: RequestInit = {}, timeoutMs = 12000): Promise<ApiResponse<T>> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.message || `Request failed (${res.status})`);
+    }
+
+    return data;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function fetchCachedJson<T>(url: string, ttlMs: number, timeoutMs = 12000): Promise<ApiResponse<T>> {
+  const key = `api-cache:${url}`;
+  const now = Date.now();
+
+  try {
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      const parsed = JSON.parse(cached) as { savedAt: number; payload: ApiResponse<T> };
+      if (now - parsed.savedAt < ttlMs) return parsed.payload;
+    }
+  } catch {
+    localStorage.removeItem(key);
+  }
+
+  try {
+    const fresh = await fetchJson<T>(url, {}, timeoutMs);
+    if (fresh.success) {
+      localStorage.setItem(key, JSON.stringify({ savedAt: now, payload: fresh }));
+    }
+    return fresh;
+  } catch (error) {
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      const parsed = JSON.parse(cached) as { payload: ApiResponse<T> };
+      return parsed.payload;
+    }
+    throw error;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
 export default function Home() {
+  const { theme, setTheme } = useTheme();
+
   /* ─── View State ─── */
   const [view, setView] = useState<ViewType>('home');
   const [prevView, setPrevView] = useState<ViewType>('home');
@@ -598,6 +697,7 @@ export default function Home() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [adminPosts, setAdminPosts] = useState<AdminPost[]>([]);
+  const [adminPostComments, setAdminPostComments] = useState<Record<string, AdminPostComment[]>>({});
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
   const [stateSummary, setStateSummary] = useState<StateSummary[]>([]);
@@ -608,7 +708,6 @@ export default function Home() {
   const [rtNotifications, setRtNotifications] = useState<RealtimeNotification[]>([]);
   const [notifCount, setNotifCount] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('dark');
   const [wsConnected, setWsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
@@ -619,6 +718,7 @@ export default function Home() {
   const [scraping, setScraping] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState<string>('');
   const [initialized, setInitialized] = useState(false);
+  const [dataError, setDataError] = useState('');
 
   /* ─── Filter States ─── */
   const [selectedState, setSelectedState] = useState<string>('all');
@@ -646,6 +746,11 @@ export default function Home() {
     title: '', content: '', category: 'General', sourceUrl: '', imageUrl: '', isPinned: false,
   });
   const [postSubmitting, setPostSubmitting] = useState(false);
+  const [openAdminCommentsId, setOpenAdminCommentsId] = useState<string | null>(null);
+  const [adminCommentsLoading, setAdminCommentsLoading] = useState<Record<string, boolean>>({});
+  const [adminCommentSubmittingId, setAdminCommentSubmittingId] = useState<string | null>(null);
+  const [adminCommentForms, setAdminCommentForms] = useState<Record<string, { name: string; email: string; message: string }>>({});
+  const [likedAdminPosts, setLikedAdminPosts] = useState<Set<string>>(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
 
   /* ─── Blog State ─── */
@@ -655,6 +760,10 @@ export default function Home() {
   const [blogSubmitting, setBlogSubmitting] = useState(false);
   const [blogNormalizing, setBlogNormalizing] = useState(false);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+  const [blogComments, setBlogComments] = useState<BlogComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const [commentForm, setCommentForm] = useState({ name: '', email: '', message: '' });
 
   /* ─── UI State ─── */
   const [scrolled, setScrolled] = useState(false);
@@ -674,6 +783,37 @@ export default function Home() {
   /* ─── Debounced Search ─── */
   const debouncedUnivSearch = useDebounce(univSearch, 300);
   const debouncedNoticeSearch = useDebounce(noticeSearch, 300);
+  const isBlackMode = theme === 'dark';
+  const themeLabel = isBlackMode ? 'Light' : 'Black';
+  const ThemeIcon = isBlackMode ? Sun : Moon;
+  const toggleTheme = () => setTheme(isBlackMode ? 'light' : 'dark');
+  const openLatestNotifications = () => {
+    setMobileMenuOpen(false);
+    setShowNotifDropdown(true);
+    setNotifCount(0);
+    void fetchJson<RealtimeNotification[]>('/api/live-notifications?limit=20', {}, 8000)
+      .then((data) => {
+        if (!data.success || !Array.isArray(data.data)) return;
+        const freshNotifications = data.data;
+        setRtNotifications((prev) => {
+          const merged = [...freshNotifications, ...prev];
+          const seen = new Set<string>();
+          return merged
+            .filter((item: RealtimeNotification) => {
+              if (seen.has(item.id)) return false;
+              seen.add(item.id);
+              return true;
+            })
+            .sort((a: RealtimeNotification, b: RealtimeNotification) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .slice(0, 60);
+        });
+      })
+      .catch((err) => console.error('Error opening live notifications:', err));
+  };
+  const toggleMobileMenu = () => {
+    setShowNotifDropdown(false);
+    setMobileMenuOpen((open) => !open);
+  };
 
   /* ═══════════════════════════════════════════════════════════════
      COMPUTED VALUES
@@ -786,15 +926,18 @@ export default function Home() {
   const fetchUniversities = useCallback(async () => {
     try {
       setLoadingUniv(true);
-      const res = await fetch('/api/universities');
-      const data = await res.json();
+      const data = await fetchCachedJson<University[]>('/api/universities?limit=220', 5 * 60 * 1000);
       if (data.success) {
         setUniversities(data.data || []);
-        setStateSummary(data.stateSummary || []);
-        setDistrictsByState(data.districtsByState || {});
+        setStateSummary((data.stateSummary as StateSummary[]) || []);
+        setDistrictsByState((data.districtsByState as Record<string, DistrictInfo[]>) || {});
+        setDataError('');
+      } else {
+        throw new Error(data.message || 'Failed to fetch universities');
       }
     } catch (err) {
       console.error('Error fetching universities:', err);
+      setDataError('Universities load nahi ho paayi. Internet/server check karke retry karein.');
     } finally {
       setLoadingUniv(false);
     }
@@ -808,15 +951,18 @@ export default function Home() {
       if (selectedCategory !== 'all') params.set('category', selectedCategory);
       if (selectedNoticeState !== 'all') params.set('state', selectedNoticeState);
       if (debouncedNoticeSearch) params.set('search', debouncedNoticeSearch);
-      params.set('limit', '100');
-      const res = await fetch(`/api/notices?${params.toString()}`);
-      const data = await res.json();
+      params.set('limit', '60');
+      const data = await fetchCachedJson<Notice[]>(`/api/notices?${params.toString()}`, 90 * 1000);
       if (data.success) {
         setNotices(data.data || []);
-        if (data.categories) setAllCategories(data.categories);
+        if (data.categories) setAllCategories(data.categories as string[]);
+        setDataError('');
+      } else {
+        throw new Error(data.message || 'Failed to fetch notices');
       }
     } catch (err) {
       console.error('Error fetching notices:', err);
+      setDataError('Notices load nahi ho paaye. Thodi der me retry karein.');
     } finally {
       setLoadingNotices(false);
     }
@@ -825,11 +971,15 @@ export default function Home() {
   const fetchAdminPosts = useCallback(async () => {
     try {
       setLoadingPosts(true);
-      const res = await fetch('/api/admin/posts/public');
-      const data = await res.json();
-      if (data.success) setAdminPosts(data.data || []);
+      const data = await fetchCachedJson<AdminPost[]>('/api/admin/posts/public?limit=20', 2 * 60 * 1000);
+      if (data.success) {
+        setAdminPosts((data.data || []).map((post: AdminPost) => normalizeAdminPost(post)));
+      } else {
+        throw new Error(data.message || 'Failed to fetch posts');
+      }
     } catch (err) {
       console.error('Error fetching admin posts:', err);
+      setDataError('Latest updates load nahi ho paaye. Page phir bhi use kar sakte hain.');
     } finally {
       setLoadingPosts(false);
     }
@@ -839,17 +989,35 @@ export default function Home() {
     try {
       const res = await fetch('/api/admin/posts?all=true');
       const data = await res.json();
-      if (data.success) setAdminPosts(data.data || []);
+      if (data.success) setAdminPosts((data.data || []).map((post: AdminPost) => normalizeAdminPost(post)));
     } catch (err) {
       console.error('Error fetching all admin posts:', err);
     }
   }, []);
 
+  const fetchAdminPostComments = useCallback(async (postId: string) => {
+    try {
+      setAdminCommentsLoading((state) => ({ ...state, [postId]: true }));
+      const res = await fetch(`/api/admin/posts/comments?postId=${encodeURIComponent(postId)}`);
+      const data = await res.json();
+      if (data.success) {
+        setAdminPostComments((state) => ({ ...state, [postId]: data.data || [] }));
+      }
+    } catch (err) {
+      console.error('Error fetching admin post comments:', err);
+    } finally {
+      setAdminCommentsLoading((state) => ({ ...state, [postId]: false }));
+    }
+  }, []);
+
   const fetchBlogPosts = useCallback(async () => {
     try {
-      const res = await fetch('/api/blog/posts/public');
-      const data = await res.json();
-      if (data.success) setBlogPosts((data.data || []).map((post: BlogPost) => normalizeBlogPost(post)));
+      const data = await fetchCachedJson<BlogPost[]>('/api/blog/posts/public?limit=6', 5 * 60 * 1000);
+      if (data.success) {
+        setBlogPosts((data.data || []).map((post: BlogPost) => normalizeBlogPost(post)));
+      } else {
+        throw new Error(data.message || 'Failed to fetch blog posts');
+      }
     } catch (err) {
       console.error('Error fetching blog posts:', err);
     }
@@ -865,19 +1033,34 @@ export default function Home() {
     }
   }, []);
 
+  const fetchBlogComments = useCallback(async (postId: string) => {
+    try {
+      setCommentsLoading(true);
+      const res = await fetch(`/api/blog/comments?postId=${encodeURIComponent(postId)}`);
+      const data = await res.json();
+      if (data.success) {
+        setBlogComments(data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching blog comments:', err);
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, []);
+
   const fetchLiveNotifications = useCallback(async (countUnread = false) => {
     try {
-      const res = await fetch('/api/live-notifications?limit=50');
-      const data = await res.json();
+      const data = await fetchCachedJson<RealtimeNotification[]>('/api/live-notifications?limit=30', 45 * 1000, 8000);
       if (data.success && Array.isArray(data.data)) {
+        const freshNotifications = data.data;
         setRtNotifications((prev) => {
           if (countUnread && prev.length > 0) {
             const prevIds = new Set(prev.map(n => n.id));
-            const freshCount = data.data.filter((item: RealtimeNotification) => !prevIds.has(item.id)).length;
+            const freshCount = freshNotifications.filter((item: RealtimeNotification) => !prevIds.has(item.id)).length;
             if (freshCount > 0) setNotifCount((current) => current + freshCount);
           }
 
-          const merged = [...data.data, ...prev];
+          const merged = [...freshNotifications, ...prev];
           const seen = new Set<string>();
           return merged
             .filter((item: RealtimeNotification) => {
@@ -1022,6 +1205,101 @@ export default function Home() {
   };
 
   /* ─── Blog Handlers ─── */
+  const handleToggleAdminComments = async (postId: string) => {
+    const nextOpenId = openAdminCommentsId === postId ? null : postId;
+    setOpenAdminCommentsId(nextOpenId);
+    if (nextOpenId && !adminPostComments[postId]) {
+      await fetchAdminPostComments(postId);
+    }
+  };
+
+  const handleAdminLike = async (postId: string) => {
+    if (likedAdminPosts.has(postId)) {
+      toast.info('Already liked');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/posts/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast.error(data.message || 'Like failed');
+        return;
+      }
+
+      const nextLiked = new Set(likedAdminPosts);
+      nextLiked.add(postId);
+      setLikedAdminPosts(nextLiked);
+      localStorage.setItem('likedAdminPosts', JSON.stringify(Array.from(nextLiked)));
+      setAdminPosts((posts) => posts.map((post) => (
+        post.id === postId ? { ...post, likes: data.data.likes } : post
+      )));
+    } catch {
+      toast.error('Like failed');
+    }
+  };
+
+  const handleAdminCommentChange = (postId: string, field: 'name' | 'email' | 'message', value: string) => {
+    setAdminCommentForms((forms) => ({
+      ...forms,
+      [postId]: {
+        name: forms[postId]?.name || '',
+        email: forms[postId]?.email || '',
+        message: forms[postId]?.message || '',
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmitAdminComment = async (postId: string) => {
+    const form = adminCommentForms[postId] || { name: '', email: '', message: '' };
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const message = form.message.trim();
+
+    if (!name) {
+      toast.error('Name required');
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Valid email required');
+      return;
+    }
+    if (message.length < 3) {
+      toast.error('Comment too short');
+      return;
+    }
+
+    try {
+      setAdminCommentSubmittingId(postId);
+      const res = await fetch('/api/admin/posts/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, name, email, message }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast.error(data.message || 'Comment failed');
+        return;
+      }
+
+      setAdminCommentForms((forms) => ({ ...forms, [postId]: { name: '', email: '', message: '' } }));
+      setAdminPosts((posts) => posts.map((post) => (
+        post.id === postId ? { ...post, commentsCount: post.commentsCount + 1 } : post
+      )));
+      await fetchAdminPostComments(postId);
+      toast.success('Comment posted');
+    } catch {
+      toast.error('Comment failed');
+    } finally {
+      setAdminCommentSubmittingId(null);
+    }
+  };
+
   const handleBlogSubmit = async () => {
     try {
       setBlogSubmitting(true);
@@ -1202,10 +1480,57 @@ export default function Home() {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const handleSubmitBlogComment = async () => {
+    if (!selectedBlogPost) return;
+
+    const name = commentForm.name.trim();
+    const email = commentForm.email.trim();
+    const message = commentForm.message.trim();
+
+    if (!name) {
+      toast.error('Name required');
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Valid email required');
+      return;
+    }
+    if (message.length < 3) {
+      toast.error('Comment too short');
+      return;
+    }
+
+    try {
+      setCommentSubmitting(true);
+      const res = await fetch('/api/blog/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId: selectedBlogPost.id,
+          name,
+          email,
+          message,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCommentForm({ name: '', email: '', message: '' });
+        await fetchBlogComments(selectedBlogPost.id);
+        toast.success('Comment posted');
+      } else {
+        toast.error(data.message || 'Comment failed');
+      }
+    } catch {
+      toast.error('Comment failed');
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
   const handleScrape = async () => {
     try {
       setScraping(true);
-      toast.info('Scraping latest notifications...');
+      toast.info('Refreshing latest notifications...');
       const res = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1216,25 +1541,25 @@ export default function Home() {
         toast.success(data.message);
         await Promise.all([fetchUniversities(), fetchNotices(), fetchLiveNotifications(true)]);
       } else {
-        toast.error(data.message || 'Scraping failed');
+        toast.error(data.message || 'Refresh failed');
       }
     } catch {
-      toast.error('Scraping failed. Please try again.');
+      toast.error('Refresh failed. Please try again.');
     } finally {
       setScraping(false);
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePostFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
-      toast.error('Only JPG, PNG, WebP, GIF images allowed');
+      toast.error('Only image or PDF files allowed');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5MB');
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error('File must be under 4MB');
       return;
     }
     try {
@@ -1244,13 +1569,18 @@ export default function Home() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (data.success) {
-        setPostForm((prev) => ({ ...prev, imageUrl: data.url }));
-        toast.success('Image uploaded');
+        if (data.kind === 'pdf') {
+          setPostForm((prev) => ({ ...prev, sourceUrl: data.url }));
+          toast.success('PDF attached');
+        } else {
+          setPostForm((prev) => ({ ...prev, imageUrl: data.url }));
+          toast.success('Image uploaded');
+        }
       } else {
         toast.error(data.message || 'Upload failed');
       }
     } catch {
-      toast.error('Image upload failed');
+      toast.error('Upload failed');
     } finally {
       setUploadingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -1285,6 +1615,17 @@ export default function Home() {
     setView(newView);
     setMobileMenuOpen(false);
     setShowNotifDropdown(false);
+    const url = new URL(window.location.href);
+    url.pathname = newView === 'admin' ? '/admin' : '/';
+    if (newView === 'home' || newView === 'admin') {
+      url.searchParams.delete('view');
+    } else {
+      url.searchParams.set('view', newView);
+    }
+    if (newView !== 'universities') {
+      url.searchParams.delete('state');
+    }
+    window.history.pushState({}, '', `${url.pathname}${url.search}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
 
@@ -1306,26 +1647,6 @@ export default function Home() {
     return () => {
       if (cooldownTimerRef.current) clearInterval(cooldownTimerRef.current);
     };
-  }, []);
-
-  // Detect initial theme preference + listen for system changes
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark' || saved === 'system') {
-      setThemeMode(saved);
-    } else {
-      setThemeMode('dark');
-    }
-    // Listen for system theme changes
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-      const current = localStorage.getItem('theme');
-      if (!current || current === 'system') {
-        setThemeMode('system');
-      }
-    };
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
   }, []);
 
   const handleScrapeUniversity = useCallback(async (uniId: string) => {
@@ -1414,15 +1735,15 @@ export default function Home() {
           });
         }, 1000);
       } else {
-        toast.error(`${uniName}: ${data.message || 'Scraping failed'}`);
+        toast.error(`${uniName}: ${data.message || 'Refresh failed'}`);
         setScrapeProgress(`${uniName}: ❌ ${data.message || 'Failed'}`);
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') {
-        toast.error('Scrape time out ho gaya. Dobara try karein.');
+        toast.error('Refresh time out ho gaya. Dobara try karein.');
         setScrapeProgress('⏱️ Request time out — dobara try karein');
       } else {
-        toast.error('Scraping fail ho gaya. Dobara try karein.');
+        toast.error('Refresh fail ho gaya. Dobara try karein.');
         setScrapeProgress('❌ Connection fail — internet check karein');
       }
     } finally {
@@ -1440,7 +1761,6 @@ export default function Home() {
   // Initial data load
   useEffect(() => {
     const init = async () => {
-      try { await fetch('/api/seed'); } catch { /* ignore */ }
       await Promise.all([
         fetchUniversities(),
         fetchNotices(),
@@ -1453,6 +1773,17 @@ export default function Home() {
     };
     init();
   }, [fetchUniversities, fetchNotices, fetchAdminPosts, fetchBlogPosts, fetchLiveNotifications, checkAdmin]);
+
+  useEffect(() => {
+    try {
+      const storedLikes = JSON.parse(localStorage.getItem('likedAdminPosts') || '[]');
+      if (Array.isArray(storedLikes)) {
+        setLikedAdminPosts(new Set(storedLikes.filter((id) => typeof id === 'string')));
+      }
+    } catch {
+      setLikedAdminPosts(new Set());
+    }
+  }, []);
 
   useEffect(() => {
     const liveTimer = setInterval(() => {
@@ -1476,15 +1807,45 @@ export default function Home() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Admin URL detection
+  // URL query and admin route detection
   useEffect(() => {
-    const checkAdminRoute = () => {
+    const applyUrlState = () => {
       if (window.location.pathname === '/admin' || window.location.pathname.endsWith('/admin')) {
         setView('admin');
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const queryView = params.get('view') as ViewType | null;
+      const queryState = params.get('state');
+
+      if (queryState && STATES.includes(queryState as typeof STATES[number])) {
+        setSelectedState(queryState);
+        setSelectedNoticeState(queryState);
+      }
+
+      if (queryView && PUBLIC_VIEWS.includes(queryView)) {
+        setView(queryView);
+      } else if (queryState) {
+        setView('universities');
+      } else {
+        setView('home');
       }
     };
-    checkAdminRoute();
+
+    applyUrlState();
+    window.addEventListener('popstate', applyUrlState);
+    return () => window.removeEventListener('popstate', applyUrlState);
   }, []);
+
+  useEffect(() => {
+    if (!selectedBlogPost) {
+      setBlogComments([]);
+      return;
+    }
+
+    fetchBlogComments(selectedBlogPost.id);
+  }, [selectedBlogPost, fetchBlogComments]);
 
   // PWA: Service Worker Registration + Install Prompt
   useEffect(() => {
@@ -1599,31 +1960,33 @@ export default function Home() {
 
   // Close notification dropdown on outside click
   useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
+    if (!showNotifDropdown) return;
+
+    const handleClick = (e: PointerEvent) => {
       if (notifDropdownRef.current && !notifDropdownRef.current.contains(e.target as Node)) {
         setShowNotifDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    document.addEventListener('pointerdown', handleClick);
+    return () => document.removeEventListener('pointerdown', handleClick);
+  }, [showNotifDropdown]);
 
   /* ═══════════════════════════════════════════════════════════════
      RENDER: NAVIGATION BAR
      ═══════════════════════════════════════════════════════════════ */
 
   const renderNavBar = () => (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'glass-strong-scrolled' : 'glass-strong'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-[90] transition-all duration-300 ${scrolled ? 'glass-strong-scrolled' : 'glass-strong'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-15 sm:h-17">
           {/* Logo */}
           <button onClick={() => switchView('home')} className="brand-logo group flex items-center gap-2.5 shrink-0">
-            <div className="brand-logo-mark w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-cyan-500 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+            <div className="brand-logo-mark w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/40 border border-amber-300/35 flex items-center justify-center shadow-lg shadow-black/30 overflow-hidden">
+              <img src="/logo.svg" alt="All University" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="brand-logo-title text-base font-bold tracking-tight text-white leading-tight">UniUpdates</h1>
-              <p className="brand-logo-sub text-[10px] tracking-wide text-white/40 leading-tight">All University Updates</p>
+              <h1 className="brand-logo-title text-base font-bold tracking-tight text-white leading-tight">All University</h1>
+              <p className="brand-logo-sub text-[10px] tracking-wide text-white/40 leading-tight">Student Portal</p>
             </div>
           </button>
 
@@ -1655,48 +2018,21 @@ export default function Home() {
               )}
             </div>
 
-            {/* Theme Toggle */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  const current = document.documentElement.classList.contains('dark') ? 'dark' : 
-                                 document.documentElement.classList.contains('light') ? 'light' : 'system';
-                  let next = current === 'dark' ? 'light' : current === 'light' ? 'system' : 'dark';
-                  if (next === 'system') {
-                    localStorage.removeItem('theme');
-                    document.documentElement.classList.remove('dark', 'light');
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    if (prefersDark) document.documentElement.classList.add('dark');
-                  } else {
-                    localStorage.setItem('theme', next);
-                    document.documentElement.classList.remove('dark', 'light');
-                    document.documentElement.classList.add(next === 'dark' ? 'dark' : 'light');
-                  }
-                  setThemeMode(next);
-                }}
-                className="text-white/60 hover:text-white hover:bg-white/10 h-10 w-10"
-                title="Toggle theme"
-              >
-                {themeMode === 'dark' ? <Moon className="w-4 h-4" /> : 
-                 themeMode === 'light' ? <Sun className="w-4 h-4" /> : 
-                 <Monitor className="w-4 h-4" />}
-              </Button>
-              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[8px] text-white/20 whitespace-nowrap capitalize">{themeMode}</span>
-            </div>
-
             {/* Notification Bell */}
-            <div className="relative" ref={notifDropdownRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => { setShowNotifDropdown(!showNotifDropdown); setNotifCount(0); }}
-                className="text-white/60 hover:text-white hover:bg-white/10 relative h-10 w-10"
+            <div className="relative z-[120] pointer-events-auto" ref={notifDropdownRef}>
+              <button
+                type="button"
+                aria-label="Open notifications"
+                aria-expanded={showNotifDropdown}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLatestNotifications();
+                }}
+                className="mobile-header-action relative z-[160] flex h-12 w-12 items-center justify-center rounded-xl border touch-manipulation sm:h-10 sm:w-10"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-5 h-5 pointer-events-none" />
                 {(notifCount > 0 || rtNotifications.length > 0) && (
-                  <span className={`absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow-lg ${
+                  <span className={`pointer-events-none absolute -top-1 -right-1 min-w-5 h-5 px-1.5 rounded-full text-white text-[11px] font-bold flex items-center justify-center shadow-lg ${
                     notifCount > 0
                       ? 'bg-linear-to-r from-red-500 to-orange-500 shadow-red-500/40 animate-bounce'
                       : 'bg-white/15 text-white/50'
@@ -1705,20 +2041,21 @@ export default function Home() {
                   </span>
                 )}
                 {notifCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-5 h-5 rounded-full bg-linear-to-r from-red-500 to-orange-500 animate-ping opacity-30" />
+                  <span className="pointer-events-none absolute -top-1 -right-1 min-w-5 h-5 rounded-full bg-linear-to-r from-red-500 to-orange-500 animate-ping opacity-30" />
                 )}
-              </Button>
+              </button>
 
               {/* Notification Dropdown */}
               <AnimatePresence>
                 {showNotifDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-[calc(100vw-1rem)] max-w-104 sm:w-105 glass-strong-scrolled rounded-2xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden"
-                  >
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.16 }}
+                      className="fixed right-3 top-16 z-[200] flex h-[min(32rem,calc(100dvh-5rem))] w-[calc(100vw-1.5rem)] max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 glass-strong-scrolled shadow-2xl shadow-black/40 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:h-[25rem] sm:w-[26rem] sm:max-w-[calc(100vw-2rem)]"
+                    >
                     <div className="p-4 border-b border-white/10 flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-linear-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
@@ -1734,13 +2071,14 @@ export default function Home() {
                         </div>
                       </div>
                       <button
-                        onClick={() => setNotifCount(0)}
-                        className="text-cyan-400 text-[11px] font-medium hover:text-cyan-300 transition-colors"
+                        type="button"
+                        onClick={() => setShowNotifDropdown(false)}
+                        className="mobile-header-action flex h-9 w-9 items-center justify-center rounded-lg border"
                       >
-                        {rtNotifications.length > 0 ? 'Mark read' : ''}
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
-                    <ScrollArea className="max-h-100">
+                    <div className="notif-scroll-panel min-h-0 flex-1 overflow-y-auto overscroll-contain pb-2 sm:h-[25rem]">
                       {rtNotifications.length === 0 ? (
                         <div className="p-10 text-center">
                           <Bell className="w-10 h-10 text-white/10 mx-auto mb-3" />
@@ -1794,77 +2132,129 @@ export default function Home() {
                           ))}
                         </div>
                       )}
-                    </ScrollArea>
-                  </motion.div>
+                    </div>
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Scrape Button (desktop) */}
+            {/* Theme Toggle (desktop) */}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${themeLabel} mode`}
+              title={`Switch to ${themeLabel} mode`}
+              className="hidden sm:flex text-white/70 hover:text-white hover:bg-white/10 border border-white/10 h-8 px-2.5 text-xs gap-1.5"
+            >
+              <ThemeIcon className="w-3.5 h-3.5" />
+              {themeLabel}
+            </Button>
+
+            {/* Refresh Button (desktop) */}
             <Button
               size="sm"
               onClick={handleScrape}
               disabled={scraping}
               className="hidden sm:flex bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-xs shadow-lg shadow-cyan-500/20 border-0 h-8"
             >
-              {scraping ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Zap className="w-3 h-3 mr-1" />}
-              Scrape
+              {scraping ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+              Refresh
             </Button>
 
             {/* Mobile Menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[88vw] max-w-72 backdrop-blur-xl app-glass p-0">
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <div className="flex flex-col h-full">
-                  <div className="p-4 border-b border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="brand-logo-mark w-9 h-9 rounded-xl bg-linear-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
-                        <GraduationCap className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="brand-logo-title text-sm font-bold text-white">UniUpdates</h2>
-                        <p className="brand-logo-sub text-[10px] text-white/40">All University Updates</p>
-                      </div>
-                    </div>
-                  </div>
-                  <nav className="flex-1 p-3 space-y-1">
-                    {NAV_ITEMS.map((item) => (
-                      <button
-                        key={item.key}
-                        onClick={() => switchView(item.key)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                          view === item.key
-                            ? 'text-cyan-400 bg-cyan-500/10'
-                            : 'text-white/60 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </button>
-                    ))}
-                  </nav>
-                  <div className="p-3 border-t border-white/10 space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-white/30">
-                      {wsConnected ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3 text-white/20" />}
-                      <span>{wsConnected ? 'Live connected' : 'Reconnecting...'}</span>
-                    </div>
-                    <Button
-                      onClick={handleScrape}
-                      disabled={scraping}
-                      className="w-full bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0 text-sm"
+            <div className="lg:hidden">
+              <button
+                type="button"
+                aria-label="Open menu"
+                aria-expanded={mobileMenuOpen}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMobileMenu();
+                }}
+                className="mobile-header-action relative z-[160] flex h-12 w-12 items-center justify-center rounded-xl border touch-manipulation"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5 pointer-events-none" /> : <Menu className="w-5 h-5 pointer-events-none" />}
+              </button>
+
+              <AnimatePresence>
+                {mobileMenuOpen && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.16 }}
+                      className="mobile-menu-panel fixed right-3 top-16 z-[200] flex max-h-[calc(100dvh-5rem)] w-[min(18rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border shadow-2xl"
                     >
-                      {scraping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-                      Scrape Now
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                    <div className="p-4 border-b mobile-menu-border">
+                      <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5">
+                        <div className="brand-logo-mark w-11 h-11 rounded-full bg-black/40 border border-amber-300/35 flex items-center justify-center overflow-hidden">
+                          <img src="/logo.svg" alt="All University" className="w-full h-full object-contain" />
+                        </div>
+                        <div>
+                          <h2 className="mobile-menu-title text-sm font-bold">All University</h2>
+                          <p className="mobile-menu-sub text-[10px]">Student Portal</p>
+                        </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="mobile-header-action flex h-9 w-9 items-center justify-center rounded-lg border"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <nav className="flex-1 p-3 space-y-1">
+                      {NAV_ITEMS.map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => {
+                            switchView(item.key);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`mobile-menu-link w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                            view === item.key ? 'active' : ''
+                          }`}
+                        >
+                          {item.icon}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </nav>
+                    <div className="p-3 border-t mobile-menu-border space-y-2">
+                      <div className="mobile-menu-sub flex items-center gap-2 text-xs">
+                        {wsConnected ? <Wifi className="w-3 h-3 text-emerald-400" /> : <WifiOff className="w-3 h-3" />}
+                        <span>{wsConnected ? 'Live connected' : 'Reconnecting...'}</span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={toggleTheme}
+                        className="mobile-menu-action w-full justify-start border text-sm"
+                      >
+                        <ThemeIcon className="w-4 h-4 mr-2" />
+                        {themeLabel} Mode
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleScrape}
+                        disabled={scraping}
+                        className="w-full bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white border-0 text-sm"
+                      >
+                        {scraping ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                        Refresh Now
+                      </Button>
+                    </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
@@ -1878,7 +2268,7 @@ export default function Home() {
   const renderMarquee = () => {
     // Always show marquee — with default items if no data
     const items = tickerItems.length > 0 ? tickerItems : [
-      { text: '🎓 Welcome to UniUpdates — All University Notices at One Place!', icon: '📢' },
+      { text: '🎓 Welcome to All University — Student Notices at One Place!', icon: '📢' },
       { text: '📋 Check Latest Exam Results, Admissions & Board Updates', icon: '🔍' },
       { text: '🏛️ Bihar • Haryana • Delhi • Uttar Pradesh — 125+ Universities', icon: '📍' },
       { text: '📝 24 Education Boards • 77 Entrance Exams • Real-time Updates', icon: '📚' },
@@ -1984,6 +2374,7 @@ export default function Home() {
       {/* ═══ Admin Posts / Announcements Section — RIGHT AFTER HERO ═══ */}
       {adminPosts.length > 0 && (
         <motion.div
+          className="blog-section"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
@@ -2006,7 +2397,7 @@ export default function Home() {
           </div>
 
           {/* Horizontal scrolling post cards */}
-          <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+          <div className="announcement-strip flex gap-4 overflow-x-auto overflow-y-hidden pb-3 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
             {[...pinnedPosts, ...activePosts].slice(0, 8).map((post, i) => {
               const isPinned = post.isPinned && post.isActive;
               const catIcon = post.category === 'Result' ? '📊' : post.category === 'Admission' ? '🎓' : post.category === 'Scholarship' ? '💰' : post.category === 'Exam' ? '📝' : '📋';
@@ -2015,6 +2406,12 @@ export default function Home() {
                                   post.category === 'Scholarship' ? 'from-yellow-500/20 to-amber-500/10 border-yellow-500/20' :
                                   post.category === 'Exam' ? 'from-red-500/20 to-pink-500/10 border-red-500/20' :
                                   'from-purple-500/20 to-violet-500/10 border-purple-500/20';
+              const commentsOpen = openAdminCommentsId === post.id;
+              const comments = adminPostComments[post.id] || [];
+              const commentForm = adminCommentForms[post.id] || { name: '', email: '', message: '' };
+              const commentsBusy = Boolean(adminCommentsLoading[post.id]);
+              const commentBusy = adminCommentSubmittingId === post.id;
+              const isLiked = likedAdminPosts.has(post.id);
               return (
                 <motion.div
                   key={post.id}
@@ -2022,9 +2419,9 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + i * 0.05 }}
                   whileHover={{ scale: 1.03, y: -3 }}
-                  className="shrink-0 w-[86vw] max-w-84 sm:w-85 snap-start group cursor-default"
+                  className="shrink-0 w-[calc(100vw-2rem)] max-w-[24rem] sm:w-[23rem] lg:w-[24rem] snap-start group cursor-default"
                 >
-                  <div className={`relative overflow-hidden rounded-2xl bg-linear-to-br ${catGradient} border backdrop-blur-md h-full`}>
+                  <div className={`announcement-card relative overflow-hidden rounded-2xl bg-linear-to-br ${catGradient} border backdrop-blur-md h-full`}>
                     {/* Shimmer */}
                     <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/3 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                     {/* Pinned indicator */}
@@ -2040,23 +2437,118 @@ export default function Home() {
                           {catIcon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="text-white font-bold text-sm leading-snug line-clamp-2">{post.title}</h4>
+                          <h4 className="announcement-title font-bold text-sm leading-snug line-clamp-2">{post.title}</h4>
                           {post.content && (
-                            <p className="text-white/40 text-xs mt-1.5 leading-relaxed line-clamp-2">{post.content}</p>
+                            <p className="announcement-copy text-xs mt-1.5 leading-relaxed line-clamp-2">{post.content}</p>
+                          )}
+                          {post.imageUrl && (
+                            <img
+                              src={post.imageUrl}
+                              alt={post.title}
+                              className="mt-3 h-32 w-full rounded-xl object-cover border border-white/10 bg-black/20"
+                              loading="lazy"
+                            />
                           )}
                           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                             <Badge className={`text-[10px] px-1.5 py-0.5 ${CAT_COLORS[post.category] || CAT_COLORS.General}`}>
                               {post.category}
                             </Badge>
-                            <span className="text-white/20 text-[10px]">{formatDate(post.createdAt)}</span>
+                            <span className="announcement-muted text-[10px]">{formatDate(post.createdAt)}</span>
                             {post.sourceUrl && (
                               <a href={post.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400/70 text-[10px] hover:text-cyan-400 hover:underline flex items-center gap-0.5 transition-colors ml-auto">
-                                Visit <ExternalLink className="w-2.5 h-2.5" />
+                                {post.sourceUrl.startsWith('data:application/pdf') ? 'Open PDF' : 'Visit'} <ExternalLink className="w-2.5 h-2.5" />
                               </a>
                             )}
                           </div>
+                          <div className="mt-3 flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAdminLike(post.id)}
+                              disabled={isLiked}
+                              className={`h-7 px-2 rounded-full text-[10px] border border-white/10 hover:bg-white/10 ${isLiked ? 'text-pink-300 bg-pink-500/10' : 'text-white/45 hover:text-pink-300'}`}
+                            >
+                              <Heart className={`w-3 h-3 mr-1 ${isLiked ? 'fill-pink-300' : ''}`} />
+                              {post.likes}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleAdminComments(post.id)}
+                              className="h-7 px-2 rounded-full text-[10px] text-white/45 border border-white/10 hover:bg-white/10 hover:text-cyan-300"
+                            >
+                              <MessageCircle className="w-3 h-3 mr-1" />
+                              {post.commentsCount}
+                            </Button>
+                          </div>
                         </div>
                       </div>
+
+                      <AnimatePresence>
+                        {commentsOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 pt-3 border-t border-white/10 space-y-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <Input
+                                  placeholder="Your name"
+                                  value={commentForm.name}
+                                  onChange={(e) => handleAdminCommentChange(post.id, 'name', e.target.value)}
+                                  className="h-8 rounded-lg bg-black/15 border-white/10 text-white text-xs placeholder:text-white/25"
+                                />
+                                <Input
+                                  placeholder="Email optional"
+                                  value={commentForm.email}
+                                  onChange={(e) => handleAdminCommentChange(post.id, 'email', e.target.value)}
+                                  className="h-8 rounded-lg bg-black/15 border-white/10 text-white text-xs placeholder:text-white/25"
+                                />
+                              </div>
+                              <Textarea
+                                placeholder="Write a comment..."
+                                value={commentForm.message}
+                                onChange={(e) => handleAdminCommentChange(post.id, 'message', e.target.value)}
+                                className="min-h-16 rounded-lg bg-black/15 border-white/10 text-white text-xs placeholder:text-white/25 resize-none"
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => handleSubmitAdminComment(post.id)}
+                                  disabled={commentBusy || !commentForm.name.trim() || commentForm.message.trim().length < 3}
+                                  className="h-8 text-xs bg-white/10 hover:bg-white/15 text-white border border-white/10"
+                                >
+                                  {commentBusy ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : <Send className="w-3 h-3 mr-1.5" />}
+                                  Comment
+                                </Button>
+                              </div>
+
+                              <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                {commentsBusy ? (
+                                  <Skeleton className="h-14 rounded-lg bg-white/5" />
+                                ) : comments.length === 0 ? (
+                                  <p className="text-white/30 text-[11px] py-1">No comments yet.</p>
+                                ) : (
+                                  comments.map((comment) => (
+                                    <div key={comment.id} className="rounded-lg bg-black/15 border border-white/5 p-2.5">
+                                      <div className="flex items-center justify-between gap-2 mb-1">
+                                        <p className="text-white/75 text-[11px] font-medium line-clamp-1">{comment.name}</p>
+                                        <span className="text-white/20 text-[9px] shrink-0">{formatDate(comment.createdAt)}</span>
+                                      </div>
+                                      <p className="text-white/50 text-[11px] leading-4 whitespace-pre-line">{comment.message}</p>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 </motion.div>
@@ -2245,23 +2737,26 @@ export default function Home() {
                 <Newspaper className="w-4 h-4 text-pink-400" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-base">Blog & Articles</h3>
-                <p className="text-white/30 text-[10px]">Helpful guides & tips for students</p>
+                <h3 className="blog-section-title text-white font-bold text-base">Blog & Articles</h3>
+                <p className="blog-section-subtitle text-white/30 text-[10px]">Helpful guides & tips for students</p>
               </div>
             </div>
+            <a href="/blog" className="blog-section-link text-pink-300 hover:text-pink-200 text-[11px] font-medium">
+              View all
+            </a>
           </div>
 
           {/* Featured post (first) + grid */}
           <div className="space-y-4">
             {blogPosts[0] && (
-              <motion.div
+              <motion.a
+                href={`/blog/${blogPosts[0].slug}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ scale: 1.01 }}
                 className="group cursor-pointer"
-                onClick={() => setSelectedBlogPost(blogPosts[0])}
               >
-                <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-white/10 backdrop-blur-md">
+                <div className="blog-featured-card relative overflow-hidden rounded-2xl bg-linear-to-br from-pink-500/10 via-purple-500/10 to-cyan-500/10 border border-white/10 backdrop-blur-md">
                   <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/2 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                   <div className="relative p-5 sm:p-6 flex flex-col sm:flex-row gap-4">
                     {blogPosts[0].coverImage ? (
@@ -2272,43 +2767,45 @@ export default function Home() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="blog-meta-row flex items-center gap-2 mb-2">
                         <Badge className="bg-pink-500/20 text-pink-400 border border-pink-500/10 text-[10px]">{blogPosts[0].category}</Badge>
                         <span className="text-white/25 text-[10px]">{blogPosts[0].readTime} read</span>
                         <span className="text-white/20 text-[10px]">{blogPosts[0].views} views</span>
+                        <span className="text-white/20 text-[10px]">{blogPosts[0].likes} likes</span>
+                        <span className="text-white/20 text-[10px]">{blogPosts[0].commentsCount} comments</span>
                       </div>
-                      <h4 className="text-white font-bold text-base sm:text-lg leading-snug line-clamp-2 group-hover:text-pink-300 transition-colors">{blogPosts[0].title}</h4>
+                      <h4 className="blog-card-title text-white font-bold text-base sm:text-lg leading-snug line-clamp-2 group-hover:text-pink-300 transition-colors">{blogPosts[0].title}</h4>
                       {blogPosts[0].excerpt && (
-                        <p className="text-white/40 text-xs mt-1.5 leading-relaxed line-clamp-2">{blogPosts[0].excerpt}</p>
+                        <p className="blog-card-excerpt text-white/40 text-xs mt-1.5 leading-relaxed line-clamp-2">{blogPosts[0].excerpt}</p>
                       )}
                       <div className="flex items-center justify-between gap-2 mt-3">
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="blog-meta-row flex items-center gap-2 min-w-0">
                         <span className="text-white/30 text-[10px]">By {blogPosts[0].author}</span>
                         <span className="text-white/15 text-[10px]">•</span>
                         <span className="text-white/20 text-[10px]">{formatDate(blogPosts[0].createdAt)}</span>
                         </div>
-                        <span className="text-pink-300 text-[11px] font-medium">Read article</span>
+                        <span className="blog-section-link text-pink-300 text-[11px] font-medium">Read article</span>
                       </div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </motion.a>
             )}
 
             {/* Blog grid — remaining posts */}
             {blogPosts.length > 1 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {blogPosts.slice(1).map((post, i) => (
-                  <motion.div
+                  <motion.a
                     key={post.id}
+                    href={`/blog/${post.slug}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 + i * 0.05 }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     className="group cursor-pointer"
-                    onClick={() => setSelectedBlogPost(post)}
                   >
-                    <div className="glass-card rounded-2xl overflow-hidden border border-white/5 hover:border-pink-500/20 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/5 h-full">
+                    <div className="blog-list-card glass-card rounded-2xl overflow-hidden border border-white/5 hover:border-pink-500/20 transition-all duration-300 hover:shadow-lg hover:shadow-pink-500/5 h-full">
                       {post.coverImage ? (
                         <img src={post.coverImage} alt="" className="w-full h-32 object-cover" />
                       ) : (
@@ -2317,24 +2814,28 @@ export default function Home() {
                         </div>
                       )}
                       <div className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="blog-meta-row flex items-center gap-2 mb-2">
                           <Badge className="bg-white/5 text-white/50 border border-white/5 text-[9px]">{post.category}</Badge>
                           <span className="text-white/20 text-[9px]">{post.readTime}</span>
                         </div>
-                        <h4 className="text-white font-semibold text-sm leading-snug line-clamp-2 group-hover:text-pink-300 transition-colors">{post.title}</h4>
+                        <h4 className="blog-card-title text-white font-semibold text-sm leading-snug line-clamp-2 group-hover:text-pink-300 transition-colors">{post.title}</h4>
                         {post.excerpt && (
-                          <p className="text-white/30 text-[11px] mt-1.5 line-clamp-2">{post.excerpt}</p>
+                          <p className="blog-card-excerpt text-white/30 text-[11px] mt-1.5 line-clamp-2">{post.excerpt}</p>
                         )}
-                        <div className="flex items-center justify-between mt-3 gap-2">
+                        <div className="blog-meta-row flex items-center justify-between mt-3 gap-2">
                           <span className="text-white/20 text-[10px]">{formatDate(post.createdAt)}</span>
                           <span className="text-white/20 text-[10px]">{post.views} views</span>
                         </div>
+                        <div className="blog-meta-row mt-1.5 flex items-center gap-3 text-[10px] text-white/20">
+                          <span>{post.likes} likes</span>
+                          <span>{post.commentsCount} comments</span>
+                        </div>
                         <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-end">
-                          <span className="text-pink-300/90 text-[11px] font-medium">Read article</span>
+                          <span className="blog-section-link text-pink-300/90 text-[11px] font-medium">Read article</span>
                         </div>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.a>
                 ))}
               </div>
             )}
@@ -2663,7 +3164,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Scrape Button */}
+        {/* Refresh Button */}
         {selectedUni && (
           <motion.div whileTap={{ scale: 0.95 }}>
             <Button
@@ -2688,8 +3189,8 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <Zap className="w-3.5 h-3.5" />
-                  Scrape Now
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Refresh Now
                 </>
               )}
             </Button>
@@ -2907,8 +3408,8 @@ export default function Home() {
                   onClick={() => handleScrapeUniversity(selectedUni.id)}
                   className="bg-linear-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 gap-1.5"
                 >
-                  {scraping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
-                  {scraping ? 'Scraping...' : 'Scrape Latest Notifications'}
+                  {scraping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {scraping ? 'Refreshing...' : 'Refresh Latest Notifications'}
                 </Button>
               </>
             ) : (
@@ -3878,7 +4379,7 @@ export default function Home() {
                 <Shield className="w-5 h-5 text-cyan-400" />
                 Admin Dashboard
               </h2>
-              <p className="text-white/35 text-xs">Manage posts, scrape & moderate</p>
+              <p className="text-white/35 text-xs">Manage posts, refresh & moderate</p>
             </div>
           </div>
           <Button
@@ -3952,15 +4453,15 @@ export default function Home() {
           </Button>
         </div>
 
-        {/* Scrape Button */}
+        {/* Refresh Button */}
         <Card className="glass-card rounded-xl border border-white/5">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-linear-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-cyan-400" />
+                <RefreshCw className="w-5 h-5 text-cyan-400" />
               </div>
               <div>
-                <p className="text-white text-sm font-medium">Scrape Notifications</p>
+                <p className="text-white text-sm font-medium">Refresh Notifications</p>
                 <p className="text-white/30 text-xs">Fetch latest notices from all universities</p>
               </div>
             </div>
@@ -3969,8 +4470,8 @@ export default function Home() {
               disabled={scraping}
               className="bg-linear-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white border-0 shadow-lg shadow-cyan-500/20"
             >
-              {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
-              <span className="hidden sm:inline ml-1">Scrape Now</span>
+              {scraping ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+              <span className="hidden sm:inline ml-1">Refresh Now</span>
             </Button>
           </CardContent>
         </Card>
@@ -4034,9 +4535,9 @@ export default function Home() {
                   className="text-white/50 hover:text-white hover:bg-white/10 text-xs"
                 >
                   {uploadingImage ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Upload className="w-3 h-3 mr-1" />}
-                  Upload Image
+                  Upload Image/PDF
                 </Button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handlePostFileUpload} />
                 <Button
                   onClick={handleCreatePost}
                   disabled={postSubmitting}
@@ -4056,6 +4557,22 @@ export default function Home() {
                 >
                   <X className="w-3 h-3" />
                 </button>
+              </div>
+            )}
+            {postForm.sourceUrl?.startsWith('data:application/pdf') && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="w-4 h-4 text-red-300 shrink-0" />
+                  <span className="text-white/60 text-xs truncate">PDF attached</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPostForm({ ...postForm, sourceUrl: '' })}
+                  className="h-7 px-2 text-white/40 hover:text-red-300 hover:bg-white/10"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
               </div>
             )}
           </CardContent>
@@ -4290,11 +4807,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen app-bg flex flex-col">
-      {/* Background Orbs */}
-      <div className="bg-orb-1" />
-      <div className="bg-orb-2" />
-      <div className="bg-orb-3" />
-
       {/* Navigation */}
       {renderNavBar()}
 
@@ -4304,6 +4816,21 @@ export default function Home() {
       {/* Main Content */}
       <main className={`flex-1 relative z-10 ${topOffset} ${bottomPadding}`}>
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-6">
+          {dataError && (
+            <div className="mb-3 flex flex-col gap-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-white/65 sm:flex-row sm:items-center sm:justify-between">
+              <span>{dataError}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setDataError('');
+                  void Promise.all([fetchUniversities(), fetchNotices(), fetchAdminPosts(), fetchBlogPosts(), fetchLiveNotifications()]);
+                }}
+                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 font-semibold text-cyan-200 hover:bg-white/10"
+              >
+                Retry
+              </button>
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={view}
@@ -4408,6 +4935,70 @@ export default function Home() {
                     ))}
                   </div>
                 )}
+                <div className="mt-7 pt-5 border-t border-white/5">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-cyan-300" />
+                      <h3 className="text-white font-semibold text-sm">Comments</h3>
+                    </div>
+                    <span className="text-white/25 text-[10px]">{blogComments.length} comments</span>
+                  </div>
+
+                  <div className="space-y-3 mb-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Your name"
+                        value={commentForm.name}
+                        onChange={(e) => setCommentForm((form) => ({ ...form, name: e.target.value }))}
+                        className="bg-white/5 border-white/10 text-white text-sm placeholder:text-white/25 h-9 rounded-lg"
+                      />
+                      <Input
+                        placeholder="Email optional"
+                        value={commentForm.email}
+                        onChange={(e) => setCommentForm((form) => ({ ...form, email: e.target.value }))}
+                        className="bg-white/5 border-white/10 text-white text-sm placeholder:text-white/25 h-9 rounded-lg"
+                      />
+                    </div>
+                    <Textarea
+                      placeholder="Write a comment..."
+                      value={commentForm.message}
+                      onChange={(e) => setCommentForm((form) => ({ ...form, message: e.target.value }))}
+                      className="bg-white/5 border-white/10 text-white text-sm placeholder:text-white/25 min-h-20 rounded-lg resize-none"
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={handleSubmitBlogComment}
+                        disabled={commentSubmitting || !commentForm.name.trim() || commentForm.message.trim().length < 3}
+                        className="bg-linear-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white border-0"
+                      >
+                        {commentSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Send className="w-3.5 h-3.5 mr-1.5" />}
+                        Post Comment
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {commentsLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-16 rounded-lg bg-white/5" />
+                        <Skeleton className="h-16 rounded-lg bg-white/5" />
+                      </div>
+                    ) : blogComments.length === 0 ? (
+                      <p className="text-white/30 text-xs py-3">No comments yet.</p>
+                    ) : (
+                      blogComments.map((comment) => (
+                        <div key={comment.id} className="rounded-lg bg-white/4 border border-white/5 p-3">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <p className="text-white/75 text-xs font-medium">{comment.name}</p>
+                            <span className="text-white/20 text-[10px]">{formatDate(comment.createdAt)}</span>
+                          </div>
+                          <p className="text-white/55 text-xs leading-5 whitespace-pre-line">{comment.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -4440,9 +5031,9 @@ export default function Home() {
                   <div className="relative shrink-0">
                     <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center border border-white/10 shadow-lg shadow-cyan-500/10">
                       <img
-                        src="/logos/pwa-icon-192.png"
-                        alt="UniUpdates"
-                        className="w-10 h-10 rounded-xl object-cover"
+                        src="/logo.svg"
+                        alt="All University"
+                        className="w-11 h-11 rounded-full object-contain"
                       />
                     </div>
                     {/* Notification badge */}
@@ -4454,7 +5045,7 @@ export default function Home() {
                   {/* Content */}
                   <div className="flex-1 min-w-0 pt-0.5">
                     <h4 className="text-white font-bold text-sm sm:text-base">
-                      Install UniUpdates App 📲
+                      Install All University App 📲
                     </h4>
                     <p className="text-white/40 text-xs mt-1 leading-relaxed line-clamp-2">
                       Add to home screen for faster access. Get instant notifications for exams, results & admissions!
@@ -4506,7 +5097,7 @@ export default function Home() {
               {/* Student Message */}
               <div className="text-center space-y-1.5 max-w-lg">
                 <p className="text-white/30 text-xs sm:text-sm leading-relaxed">
-                  📚 <span className="text-cyan-400/80 font-medium">UniUpdates</span> — Your own platform where every student gets the right information at the right time.
+                  📚 <span className="text-cyan-400/80 font-medium">All University</span> — Your own platform where every student gets the right information at the right time.
                 </p>
                 <p className="text-white/20 text-[11px] sm:text-xs">
                   Exam updates, admission alerts, board results, entrance exams — sab ek jagah. Ab kisi notice miss mat karo!
@@ -4537,11 +5128,16 @@ export default function Home() {
               </div>
               {/* Bottom bar */}
               <div className="flex flex-wrap items-center justify-center gap-2 text-white/15 text-[10px] text-center">
-                <span>© 2025 UniUpdates</span>
+                <span>© 2025 All University</span>
                 <span>•</span>
                 <span>All Rights Reserved</span>
                 <span>•</span>
                 <span>Bihar • Haryana • Delhi • UP</span>
+              </div>
+              <div className="max-w-4xl rounded-xl border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-center shadow-sm">
+                <p className="text-[10px] leading-5 text-white/58 sm:text-[11px]">
+                  <span className="font-bold text-amber-200">Disclaimer:</span> AllUniversity.org is an independent educational portal and is NOT affiliated with any university, education board, or government body. All notifications and fee structures are gathered from public sources. Students are advised to verify the information from the respective official websites.
+                </p>
               </div>
             </div>
           </div>

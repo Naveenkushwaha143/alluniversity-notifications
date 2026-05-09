@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       id: noticeId || `n-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       title,
       message: message || '',
-      source: source || universityName || 'UniUpdates',
+      source: source || universityName || 'All University',
       category: category || 'Notification',
       state: state || '',
       timestamp: new Date().toISOString(),

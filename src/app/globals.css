@@ -112,25 +112,25 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   /* App-level theme tokens */
-  --app-bg: #0a0a1a;
-  --app-bg-secondary: #0f0f24;
+  --app-bg: #02040a;
+  --app-bg-secondary: #070a12;
   --app-text: #f8fafc;
   --app-text-secondary: #cbd5e1;
   --app-text-muted: #64748b;
   --app-border: rgba(255, 255, 255, 0.08);
   --app-border-hover: rgba(255, 255, 255, 0.15);
-  --app-glass-bg: rgba(10, 10, 26, 0.75);
-  --app-glass-bg-strong: rgba(10, 10, 26, 0.95);
-  --app-glass-border: rgba(255, 255, 255, 0.06);
-  --app-card-bg: rgba(255, 255, 255, 0.04);
-  --app-card-border: rgba(255, 255, 255, 0.08);
+  --app-glass-bg: rgba(4, 7, 15, 0.86);
+  --app-glass-bg-strong: rgba(3, 5, 12, 0.96);
+  --app-glass-border: rgba(226, 191, 101, 0.12);
+  --app-card-bg: rgba(255, 255, 255, 0.035);
+  --app-card-border: rgba(226, 191, 101, 0.1);
   --app-overlay: rgba(0, 0, 0, 0.6);
   --app-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
   --app-modal-bg: #0d1117;
   --app-modal-grad-start: rgba(15, 23, 42, 0.96);
   --app-modal-grad-end: rgba(8, 15, 33, 0.92);
   --app-modal-border: rgba(148, 163, 184, 0.24);
-  --app-orb-opacity: 1;
+  --app-orb-opacity: 0;
   --app-ticker-text: rgba(255, 255, 255, 0.85);
   --app-scrollbar: rgba(255, 255, 255, 0.1);
   --app-scrollbar-hover: rgba(255, 255, 255, 0.2);
@@ -185,7 +185,7 @@
 /* ═══════════════════ GLASSMORPHISM UI ═══════════════════ */
 .glass-strong {
   background:
-    linear-gradient(120deg, rgba(6, 182, 212, 0.08), rgba(139, 92, 246, 0.06) 40%, rgba(255, 255, 255, 0.12) 100%),
+    linear-gradient(120deg, rgba(226, 191, 101, 0.08), rgba(13, 22, 42, 0.4) 45%, rgba(255, 255, 255, 0.04) 100%),
     var(--app-glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -194,7 +194,7 @@
 
 .glass-strong-scrolled {
   background:
-    linear-gradient(120deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.08) 40%, rgba(255, 255, 255, 0.14) 100%),
+    linear-gradient(120deg, rgba(226, 191, 101, 0.1), rgba(13, 22, 42, 0.5) 45%, rgba(255, 255, 255, 0.05) 100%),
     var(--app-glass-bg-strong);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
@@ -220,9 +220,9 @@
 
 .dark .glass-card {
   background:
-    linear-gradient(140deg, rgba(30, 41, 59, 0.58), rgba(17, 24, 39, 0.52) 35%, rgba(15, 23, 42, 0.62) 100%),
+    linear-gradient(140deg, rgba(15, 23, 42, 0.66), rgba(5, 8, 16, 0.78) 40%, rgba(2, 4, 10, 0.88) 100%),
     var(--app-card-bg);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(226, 191, 101, 0.12);
   box-shadow:
     0 14px 34px rgba(2, 6, 23, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
@@ -271,6 +271,45 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
+.announcement-strip {
+  scroll-padding-inline: 0.25rem;
+}
+
+.announcement-card {
+  background-color: color-mix(in srgb, var(--app-card-bg) 78%, transparent);
+  border-color: color-mix(in srgb, var(--app-border) 78%, transparent) !important;
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.dark .announcement-card {
+  background-color: rgba(15, 23, 42, 0.72);
+  border-color: rgba(226, 191, 101, 0.18) !important;
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.announcement-title {
+  color: var(--app-text) !important;
+}
+
+.announcement-copy {
+  color: color-mix(in srgb, var(--app-text-secondary) 82%, transparent) !important;
+}
+
+.announcement-muted {
+  color: color-mix(in srgb, var(--app-text-muted) 78%, transparent) !important;
+}
+
+.notif-scroll-panel {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-gutter: stable;
+}
+
 .entrance-card:hover {
   border-color: color-mix(in srgb, #a855f7 35%, var(--app-card-border)) !important;
   box-shadow:
@@ -285,8 +324,8 @@
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
-  background: linear-gradient(120deg, rgba(6, 182, 212, 0.08), rgba(236, 72, 153, 0.06), rgba(139, 92, 246, 0.08));
-  opacity: 0.84;
+  background: linear-gradient(120deg, rgba(226, 191, 101, 0.06), rgba(59, 130, 246, 0.03), rgba(255, 255, 255, 0.025));
+  opacity: 0.72;
 }
 
 :root:not(.dark) .glass-card::before {
@@ -550,7 +589,7 @@
 .brand-logo:hover .brand-logo-mark {
   transform: translateY(-1px) scale(1.03);
   filter: saturate(1.08);
-  box-shadow: 0 14px 28px rgba(6, 182, 212, 0.3);
+  box-shadow: 0 14px 28px rgba(226, 191, 101, 0.18);
 }
 
 .brand-logo:hover .brand-logo-title {
@@ -618,11 +657,111 @@
 }
 .app-overlay { background: var(--app-overlay); }
 
-.app-bg {
+.mobile-header-action {
+  color: var(--app-text-secondary);
+  border-color: var(--app-border);
+  background: color-mix(in srgb, var(--app-text) 5%, transparent);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transform: translateZ(0);
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.mobile-header-action:hover,
+.mobile-header-action:active {
+  color: var(--app-hover-text);
+  background: color-mix(in srgb, var(--app-text) 10%, transparent);
+  transform: translateZ(0) scale(0.98);
+}
+
+.mobile-header-action svg {
+  color: currentColor;
+}
+
+.mobile-menu-panel {
+  background:
+    linear-gradient(135deg, var(--app-modal-grad-start), var(--app-modal-grad-end)),
+    var(--app-modal-bg);
+  border-color: var(--app-modal-border);
+  color: var(--app-text);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  contain: layout paint;
+  will-change: transform, opacity;
+}
+
+.notif-scroll-panel {
+  contain: content;
+}
+
+.mobile-menu-border {
+  border-color: var(--app-border);
+}
+
+.mobile-menu-title {
+  color: var(--app-text);
+}
+
+.mobile-menu-sub {
+  color: color-mix(in srgb, var(--app-text-muted) 88%, transparent);
+}
+
+.mobile-menu-link {
+  color: color-mix(in srgb, var(--app-text-secondary) 88%, transparent);
+}
+
+.mobile-menu-link svg {
+  color: currentColor;
+}
+
+.mobile-menu-link:hover {
+  color: var(--app-hover-text);
+  background: color-mix(in srgb, var(--app-text) 8%, transparent);
+}
+
+.mobile-menu-link.active {
+  color: #06b6d4;
+  background: rgba(6, 182, 212, 0.14);
+}
+
+.mobile-menu-action {
+  color: var(--app-text-secondary) !important;
+  border-color: var(--app-border) !important;
+  background: color-mix(in srgb, var(--app-text) 5%, transparent) !important;
+}
+
+.mobile-menu-action:hover {
+  color: var(--app-hover-text) !important;
+  background: color-mix(in srgb, var(--app-text) 9%, transparent) !important;
+}
+
+.dark .app-bg {
   background-image:
-    radial-gradient(1200px 500px at -5% -10%, rgba(6, 182, 212, 0.14), transparent 55%),
-    radial-gradient(1000px 420px at 105% -20%, rgba(139, 92, 246, 0.12), transparent 52%),
-    radial-gradient(900px 360px at 50% 120%, rgba(236, 72, 153, 0.08), transparent 48%);
+    linear-gradient(180deg, rgba(12, 19, 34, 0.78), rgba(2, 4, 10, 0.96) 42%, #02040a 100%),
+    radial-gradient(900px 280px at 50% -12%, rgba(226, 191, 101, 0.1), transparent 58%);
+}
+
+:root:not(.dark) .app-bg {
+  background:
+    linear-gradient(180deg, #f8fbff 0%, #edf4fb 46%, #e7eef7 100%),
+    radial-gradient(900px 260px at 50% -12%, rgba(14, 165, 233, 0.14), transparent 58%);
+}
+
+:root:not(.dark) .glass-strong {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.86), rgba(239, 246, 255, 0.8) 48%, rgba(255, 255, 255, 0.72) 100%),
+    var(--app-glass-bg);
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+
+:root:not(.dark) .glass-strong-scrolled {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.94), rgba(241, 247, 255, 0.92) 48%, rgba(255, 255, 255, 0.86) 100%),
+    var(--app-glass-bg-strong);
+  border-bottom-color: rgba(15, 23, 42, 0.12);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -699,8 +838,48 @@
 :root:not(.dark) .app-bg .bg-linear-to-r[class*="from-red"] [class~="text-white"],
 :root:not(.dark) .app-bg .bg-linear-to-r[class*="from-emerald"] [class~="text-white"],
 :root:not(.dark) .app-bg .bg-linear-to-r[class*="from-orange"] [class~="text-white"],
-:root:not(.dark) .app-bg .bg-linear-to-br [class~="text-white"] {
+:root:not(.dark) .app-bg .bg-linear-to-br:not(.blog-featured-card) [class~="text-white"] {
   color: white !important;
+}
+
+.blog-featured-card {
+  background:
+    linear-gradient(120deg, rgba(236, 72, 153, 0.13), rgba(14, 165, 233, 0.12)),
+    var(--app-card-bg);
+  border-color: rgba(236, 72, 153, 0.18);
+}
+
+.blog-section-title,
+.blog-card-title {
+  color: var(--app-text) !important;
+  text-shadow: none;
+}
+
+.blog-section-subtitle,
+.blog-card-excerpt,
+.blog-meta-row,
+.blog-meta-row span {
+  color: var(--app-text-muted) !important;
+}
+
+.blog-section-link {
+  color: #ec4899 !important;
+}
+
+.dark .blog-section-title,
+.dark .blog-card-title {
+  color: #ffffff !important;
+}
+
+.dark .blog-section-subtitle,
+.dark .blog-card-excerpt,
+.dark .blog-meta-row,
+.dark .blog-meta-row span {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.dark .blog-section-link {
+  color: #f9a8d4 !important;
 }
 
 /* ── Specific fix: colored badges keep white text ── */

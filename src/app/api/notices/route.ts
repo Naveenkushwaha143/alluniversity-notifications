@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const [notices, total] = await Promise.all([
+    const [notices, total, categories] = await Promise.all([
       db.notice.findMany({
         where,
         include: {
@@ -53,13 +53,11 @@ export async function GET(request: NextRequest) {
         skip,
       }),
       db.notice.count({ where }),
+      db.notice.findMany({
+        select: { category: true },
+        distinct: ['category'],
+      }),
     ]);
-
-    // Get unique categories
-    const categories = await db.notice.findMany({
-      select: { category: true },
-      distinct: ['category'],
-    });
 
     return NextResponse.json({
       success: true,
@@ -70,6 +68,10 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       categories: categories.map(c => c.category),
       data: notices
+    }, {
+      headers: {
+        'Cache-Control': 'public, max-age=20, stale-while-revalidate=90',
+      },
     });
   } catch (error) {
     console.error("Error fetching notices:", error);

@@ -1,27 +1,27 @@
 {
   "name": "All University Updates - India Student Notices, Results and Exams",
-  "short_name": "UniUpdates",
+  "short_name": "All University",
   "description": "Latest university notices, exam dates, results, admissions, scholarships, board notifications and entrance exam alerts for students in Bihar, Uttar Pradesh, Haryana, Delhi and India.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a1a",
-  "theme_color": "#06b6d4",
+  "background_color": "#02040a",
+  "theme_color": "#02040a",
   "orientation": "portrait-primary",
   "categories": ["education", "utilities", "news"],
   "lang": "en",
   "dir": "ltr",
   "icons": [
     {
-      "src": "/logos/pwa-icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/logos/pwa-icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
@@ -32,21 +32,21 @@
       "short_name": "Notices",
       "description": "View latest university notices",
       "url": "/?view=notices",
-      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     },
     {
       "name": "Universities",
       "short_name": "Universities",
       "description": "Browse all universities",
       "url": "/?view=universities",
-      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     },
     {
       "name": "Exams",
       "short_name": "Exams",
       "description": "Entrance exam details",
       "url": "/?view=entrance",
-      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     }
   ]
 }
