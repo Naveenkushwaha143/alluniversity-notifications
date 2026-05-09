@@ -3,10 +3,10 @@ import type { ReactNode } from 'react';
 
 const navItems = [
   { label: 'Home', href: '/' },
-  { label: 'Universities', href: '/?view=universities' },
-  { label: 'Notices', href: '/?view=notices' },
-  { label: 'Entrance', href: '/?view=entrance' },
-  { label: 'Board', href: '/?view=board' },
+  { label: 'Universities', href: '/universities' },
+  { label: 'Notices', href: '/notices' },
+  { label: 'Entrance', href: '/entrance' },
+  { label: 'Board', href: '/board' },
   { label: 'Blog', href: '/blog' },
 ];
 

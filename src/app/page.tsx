@@ -1616,11 +1616,19 @@ export default function Home() {
     setMobileMenuOpen(false);
     setShowNotifDropdown(false);
     const url = new URL(window.location.href);
-    url.pathname = newView === 'admin' ? '/admin' : '/';
+    const pathByView: Record<ViewType, string> = {
+      home: '/',
+      universities: '/universities',
+      notices: '/notices',
+      entrance: '/entrance',
+      board: '/board',
+      admin: '/admin',
+    };
+    url.pathname = pathByView[newView];
     if (newView === 'home' || newView === 'admin') {
       url.searchParams.delete('view');
     } else {
-      url.searchParams.set('view', newView);
+      url.searchParams.delete('view');
     }
     if (newView !== 'universities') {
       url.searchParams.delete('state');
@@ -1818,13 +1826,24 @@ export default function Home() {
       const params = new URLSearchParams(window.location.search);
       const queryView = params.get('view') as ViewType | null;
       const queryState = params.get('state');
+      const pathView = window.location.pathname === '/universities'
+        ? 'universities'
+        : window.location.pathname === '/notices'
+          ? 'notices'
+          : window.location.pathname === '/entrance'
+            ? 'entrance'
+            : window.location.pathname === '/board'
+              ? 'board'
+              : null;
 
       if (queryState && STATES.includes(queryState as typeof STATES[number])) {
         setSelectedState(queryState);
         setSelectedNoticeState(queryState);
       }
 
-      if (queryView && PUBLIC_VIEWS.includes(queryView)) {
+      if (pathView) {
+        setView(pathView);
+      } else if (queryView && PUBLIC_VIEWS.includes(queryView)) {
         setView(queryView);
       } else if (queryState) {
         setView('universities');

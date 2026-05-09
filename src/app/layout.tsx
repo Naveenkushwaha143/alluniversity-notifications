@@ -96,11 +96,6 @@ export default function RootLayout({
       "Scholarships",
       "Entrance exams",
     ],
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${siteConfig.url}/?search={search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return (

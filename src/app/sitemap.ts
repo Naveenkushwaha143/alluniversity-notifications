@@ -1,20 +1,17 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { siteConfig } from "@/lib/seo";
+import { importantStates, noticeSlug, stateSlug, universitySlug } from "@/lib/seo-pages";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const routes = [
     { path: "/", priority: 1.0, changeFrequency: "hourly" as const },
     { path: "/blog", priority: 0.9, changeFrequency: "daily" as const },
-    { path: "/?view=universities", priority: 0.9, changeFrequency: "daily" as const },
-    { path: "/?view=notices", priority: 0.95, changeFrequency: "hourly" as const },
-    { path: "/?view=entrance", priority: 0.85, changeFrequency: "daily" as const },
-    { path: "/?view=board", priority: 0.85, changeFrequency: "daily" as const },
-    { path: "/?state=Bihar", priority: 0.8, changeFrequency: "daily" as const },
-    { path: "/?state=Uttar%20Pradesh", priority: 0.8, changeFrequency: "daily" as const },
-    { path: "/?state=Haryana", priority: 0.8, changeFrequency: "daily" as const },
-    { path: "/?state=Delhi", priority: 0.8, changeFrequency: "daily" as const },
+    { path: "/universities", priority: 0.9, changeFrequency: "daily" as const },
+    { path: "/notices", priority: 0.95, changeFrequency: "hourly" as const },
+    { path: "/entrance", priority: 0.85, changeFrequency: "daily" as const },
+    { path: "/board", priority: 0.85, changeFrequency: "daily" as const },
   ];
 
   const staticRoutes = routes.map((route) => ({
@@ -25,15 +22,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const posts = await db.blogPost.findMany({
-      where: { isPublished: true, isActive: true },
-      select: { slug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-      take: 500,
-    });
+    const [posts, universities, notices, stateGroups] = await Promise.all([
+      db.blogPost.findMany({
+        where: { isPublished: true, isActive: true },
+        select: { slug: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 500,
+      }),
+      db.university.findMany({
+        where: { isActive: true },
+        select: { shortName: true, name: true, updatedAt: true },
+        orderBy: { updatedAt: "desc" },
+        take: 500,
+      }),
+      db.notice.findMany({
+        select: { id: true, title: true, updatedAt: true },
+        orderBy: { datePublished: "desc" },
+        take: 1000,
+      }),
+      db.university.groupBy({
+        by: ["state"],
+        where: { isActive: true },
+        _max: { updatedAt: true },
+      }),
+    ]);
+    const dynamicStates = Array.from(new Map(
+      [...importantStates.map((state) => ({ state, updatedAt: now })), ...stateGroups.map((item) => ({
+        state: item.state,
+        updatedAt: item._max.updatedAt || now,
+      }))].map((item) => [stateSlug(item.state), item]),
+    ).values());
 
     return [
       ...staticRoutes,
+      ...dynamicStates.map((item) => ({
+        url: new URL(`/states/${stateSlug(item.state)}`, siteConfig.url).toString(),
+        lastModified: item.updatedAt,
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      })),
+      ...universities.map((university) => ({
+        url: new URL(`/universities/${universitySlug(university)}`, siteConfig.url).toString(),
+        lastModified: university.updatedAt,
+        changeFrequency: "daily" as const,
+        priority: 0.82,
+      })),
+      ...notices.map((notice) => ({
+        url: new URL(`/notices/${noticeSlug(notice)}`, siteConfig.url).toString(),
+        lastModified: notice.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.78,
+      })),
       ...posts.map((post) => ({
         url: new URL(`/blog/${post.slug}`, siteConfig.url).toString(),
         lastModified: post.updatedAt,

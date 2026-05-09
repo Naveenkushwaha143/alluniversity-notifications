@@ -31,21 +31,21 @@
       "name": "Notices",
       "short_name": "Notices",
       "description": "View latest university notices",
-      "url": "/?view=notices",
+      "url": "/notices",
       "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     },
     {
       "name": "Universities",
       "short_name": "Universities",
       "description": "Browse all universities",
-      "url": "/?view=universities",
+      "url": "/universities",
       "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     },
     {
       "name": "Exams",
       "short_name": "Exams",
       "description": "Entrance exam details",
-      "url": "/?view=entrance",
+      "url": "/entrance",
       "icons": [{ "src": "/logo.svg", "sizes": "any" }]
     }
   ]
