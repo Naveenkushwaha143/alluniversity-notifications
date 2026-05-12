@@ -1,21 +1,6 @@
-import Link from 'next/link';
-import type { Metadata } from 'next';
-import { absoluteUrl, buildBreadcrumbSchema, buildFaqSchema, pageFaqs, slugify } from '@/lib/seo-pages';
+import { slugify } from '@/lib/seo-pages';
 
-export const metadata: Metadata = {
-  title: 'Board Exam 2026 - Result, Date Sheet, Admit Card, Official Links',
-  description:
-    'Board exam 2026 updates for CBSE, Bihar Board, UP Board, Haryana Board and other state boards with result, date sheet, admit card and official links.',
-  alternates: { canonical: '/board' },
-  openGraph: {
-    title: 'Board Exam 2026 - Result, Date Sheet and Admit Card',
-    description: 'Check board result, date sheet, admit card and official board website links.',
-    url: absoluteUrl('/board'),
-    type: 'website',
-  },
-};
-
-type BoardItem = {
+export type BoardItem = {
   name: string;
   keyword: string;
   website: string;
@@ -24,21 +9,38 @@ type BoardItem = {
   notifications: string[];
 };
 
-type BoardPageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-function getParam(params: Record<string, string | string[] | undefined>, key: string) {
-  const value = params[key];
-  return Array.isArray(value) ? value[0] || '' : value || '';
+export function boardSlug(board: { name: string }) {
+  return slugify(board.name);
 }
 
-const boards: BoardItem[] = [
+export const boardSlugAliases: Record<string, string> = {
+  'cisce-icse-isc': 'cisce-board-icse-isc',
+  'haryana-board-bseh': 'haryana-board-hbse-bseh',
+  'delhi-board': 'delhi-board-education-department',
+  'karnataka-board-kseeb': 'karnataka-board-kseab',
+  'tamil-nadu-board-tnbse': 'tamil-nadu-board-dge-tndge',
+  'west-bengal-board-wbbse': 'west-bengal-board-wbbse-wbchse',
+  'kerala-board-dhse': 'kerala-board-pareeksha-bhavan-dhse',
+  'telangana-board-bse': 'telangana-board-bse-tsbie',
+  'ap-board-bieap': 'andhra-pradesh-board-bseap-bieap',
+  'odisha-board-bse': 'odisha-board-bse-chse',
+  'jammu-and-kashmir-board-jkbose': 'jkbose',
+};
+
+export function resolveBoardSlug(slug: string) {
+  return boardSlugAliases[slug] || slug;
+}
+
+export const boardPages: BoardItem[] = [
   { name: 'CBSE Board', keyword: 'CBSE result, date sheet and admit card 2026', website: 'https://cbse.gov.in', exams: 'Class 10 and Class 12', state: 'National', notifications: ['CBSE date sheet notification', 'CBSE admit card update', 'CBSE class 10 and 12 result notice'] },
   { name: 'CISCE Board (ICSE/ISC)', keyword: 'ICSE ISC timetable, admit card and result 2026', website: 'https://cisce.org', exams: 'ICSE and ISC', state: 'National', notifications: ['ICSE timetable update', 'ISC result notification', 'CISCE exam instructions'] },
   { name: 'NIOS Board', keyword: 'NIOS admission, admit card and result 2026', website: 'https://nios.ac.in', exams: 'Secondary and Senior Secondary', state: 'National', notifications: ['NIOS admission notice', 'NIOS hall ticket update', 'NIOS result notification'] },
   { name: 'Bihar Board (BSEB)', keyword: 'BSEB Bihar Board 10th 12th result 2026', website: 'https://biharboardonline.bihar.gov.in', exams: 'Matric and Intermediate', state: 'Bihar', notifications: ['BSEB matric result update', 'Bihar Board inter admit card', 'Bihar Board compartment exam notice'] },
+  { name: 'Bihar Open Board', keyword: 'Bihar open school 10th 12th admission, admit card and result 2026', website: 'https://bbos.bihar.gov.in', exams: 'Open School Class 10 and Class 12', state: 'Bihar', notifications: ['BBOSE admission form notice', 'Bihar Open Board admit card update', 'BBOSE result notification'] },
+  { name: 'Bihar Sanskrit Board', keyword: 'Bihar Sanskrit board exam date sheet result and admit card 2026', website: 'https://bssbpatna.com', exams: 'Sanskrit 10th and 12th', state: 'Bihar', notifications: ['Sanskrit Board exam form notice', 'Bihar Sanskrit Board date sheet update', 'Sanskrit Board result notification'] },
+  { name: 'Bihar Madrasa Board', keyword: 'Bihar Madrasa board Wastania Fauqania Munshi Moulvi result 2026', website: 'https://bsmeb.org', exams: 'Wastania, Fauqania, Munshi and Moulvi', state: 'Bihar', notifications: ['Madrasa Board exam schedule notice', 'Bihar Madrasa Board admit card update', 'Madrasa Board result notification'] },
   { name: 'UP Board (UPMSP)', keyword: 'UP Board result, date sheet and admit card 2026', website: 'https://upmsp.edu.in', exams: 'High School and Intermediate', state: 'Uttar Pradesh', notifications: ['UP Board date sheet notice', 'UPMSP admit card update', 'UP Board result notification'] },
+  { name: 'UP Sanskrit Board', keyword: 'UP Sanskrit board exam date sheet admit card result 2026', website: 'https://upsanskritparishad.up.gov.in', exams: 'Sanskrit 10th and 12th', state: 'Uttar Pradesh', notifications: ['UP Sanskrit Board exam dates', 'UP Sanskrit Board admit card notice', 'UP Sanskrit Board result update'] },
   { name: 'Haryana Board (HBSE/BSEH)', keyword: 'HBSE Haryana Board result and date sheet 2026', website: 'https://bseh.org.in', exams: 'Class 10 and Class 12', state: 'Haryana', notifications: ['HBSE date sheet update', 'Haryana Board result notice', 'BSEH rechecking form notification'] },
   { name: 'Delhi Board / Education Department', keyword: 'Delhi board school exam result and notice 2026', website: 'https://edudel.nic.in', exams: 'Class 10 and Class 12', state: 'Delhi', notifications: ['Delhi school exam notice', 'Delhi result update', 'Delhi admit card instructions'] },
   { name: 'MP Board (MPBSE)', keyword: 'MP Board 10th 12th result and admit card 2026', website: 'https://mpbse.nic.in', exams: 'Class 10 and Class 12', state: 'Madhya Pradesh', notifications: ['MP Board time table', 'MPBSE admit card update', 'MP Board result notification'] },
@@ -69,159 +71,3 @@ const boards: BoardItem[] = [
   { name: 'Sikkim Board', keyword: 'Sikkim Board exam result date sheet 2026', website: 'https://sikkim.gov.in', exams: 'Class 10 and Class 12', state: 'Sikkim', notifications: ['Sikkim exam notice', 'Sikkim result update', 'Sikkim admit card instructions'] },
   { name: 'Ladakh Board Updates', keyword: 'Ladakh school board exam result updates 2026', website: 'https://jkbose.nic.in', exams: 'Class 10 and Class 12', state: 'Ladakh', notifications: ['Ladakh date sheet update', 'Ladakh result notice', 'Ladakh board exam instructions'] },
 ];
-
-export default async function BoardSeoPage({ searchParams }: BoardPageProps) {
-  const params = await searchParams || {};
-  const selectedState = getParam(params, 'state');
-  const selectedExam = getParam(params, 'exam');
-  const query = getParam(params, 'q').trim().toLowerCase();
-  const states = Array.from(new Set(boards.map((board) => board.state))).sort((a, b) => a.localeCompare(b));
-  const examFilters = ['Class 10', 'Class 12', 'SSC', 'HSC', 'Intermediate', 'Open School'];
-  const filteredBoards = boards.filter((board) => {
-    const boardText = `${board.name} ${board.keyword} ${board.exams} ${board.state} ${board.notifications.join(' ')}`.toLowerCase();
-    const matchesQuery = !query || boardText.includes(query);
-    const matchesState = !selectedState || board.state === selectedState;
-    const matchesExam = !selectedExam || board.exams.toLowerCase().includes(selectedExam.toLowerCase()) || board.keyword.toLowerCase().includes(selectedExam.toLowerCase());
-    return matchesQuery && matchesState && matchesExam;
-  });
-  const faqs = pageFaqs('Board exam result and date sheet 2026');
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: 'Board Exam 2026',
-    description: metadata.description,
-    url: absoluteUrl('/board'),
-    mainEntity: boards.map((board) => ({
-      '@type': 'EducationalOrganization',
-      name: board.name,
-      url: board.website,
-      areaServed: board.state,
-    })),
-  };
-
-  return (
-    <section className="px-4 py-8 sm:px-6 sm:py-12">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([schema, buildBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Board Exam 2026', url: '/board' }]), buildFaqSchema(faqs)]) }} />
-      <div className="mx-auto max-w-6xl">
-        <header className="mb-7 border-b border-white/10 pb-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-300/80">Board updates</p>
-          <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-            Board Exam 2026 Result, Date Sheet & Admit Card
-          </h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-white/58">
-            CBSE, Bihar Board, UP Board, Haryana Board and open school official links for results, admit cards, date sheets and marksheet updates.
-          </p>
-        </header>
-
-        <div className="mb-7 flex items-center gap-2 overflow-x-auto pb-1">
-          <Link href="/board" className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${!selectedState ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
-            All ({boards.length})
-          </Link>
-          {states.map((state) => (
-            <Link key={state} href={`/board?state=${encodeURIComponent(state)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedState === state ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
-              {state} ({boards.filter((board) => board.state === state).length})
-            </Link>
-          ))}
-        </div>
-
-        <form method="get" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-6">
-          <div className="grid gap-3 md:grid-cols-[1fr_188px_188px_auto]">
-            <label className="grid gap-1">
-              <span className="sr-only">Search board</span>
-              <input
-                name="q"
-                defaultValue={getParam(params, 'q')}
-                placeholder="CBSE, Bihar, admit card..."
-                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="sr-only">State</span>
-              <select
-                name="state"
-                defaultValue={selectedState}
-                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
-              >
-                <option value="">All states</option>
-                {states.map((state) => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1">
-              <span className="sr-only">Exam</span>
-              <select
-                name="exam"
-                defaultValue={selectedExam}
-                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
-              >
-                <option value="">All exams</option>
-                {examFilters.map((exam) => (
-                  <option key={exam} value={exam}>{exam}</option>
-                ))}
-              </select>
-            </label>
-            <div className="flex items-end gap-2">
-              <button type="submit" className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200">
-                Filter
-              </button>
-              <a href="/board" className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-sm font-semibold text-white/65 hover:bg-white/10">
-                Clear
-              </a>
-            </div>
-          </div>
-          <p className="mt-3 text-xs text-white/40">{filteredBoards.length} board results found</p>
-        </form>
-
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredBoards.map((board) => (
-            <Link
-              href={`/board/${slugify(board.name)}`}
-              key={board.name}
-              className="group flex aspect-square flex-col justify-between rounded-lg border border-white/10 bg-white/[0.035] p-4 transition hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-white/[0.06] hover:shadow-lg hover:shadow-cyan-950/30"
-            >
-              <div>
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px] text-white/35">
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 text-cyan-200">{board.state}</span>
-                  <span>{board.exams}</span>
-                </div>
-                <h2 className="text-lg font-semibold leading-6 text-white transition group-hover:text-cyan-100">{board.name} 2026</h2>
-                <p className="mt-2 line-clamp-4 text-sm leading-6 text-white/50">{board.keyword}</p>
-              </div>
-              <div className="mt-4 space-y-3">
-                <div className="space-y-1.5">
-                  {board.notifications.slice(0, 2).map((notice) => (
-                    <p key={`${board.name}-${notice}`} className="line-clamp-1 text-[11px] text-white/40">
-                      {notice}
-                    </p>
-                  ))}
-                </div>
-                <span className="inline-flex h-9 items-center justify-center rounded-md bg-cyan-300 px-3 text-xs font-bold text-slate-950">
-                  Open Details
-                </span>
-              </div>
-            </Link>
-          ))}
-        </section>
-
-        {filteredBoards.length === 0 && (
-          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-white/65">
-            No board matched this filter. Clear filters or search another state/board name.
-          </div>
-        )}
-
-        <section className="mt-10 border-t border-white/10 pt-6">
-          <h2 className="text-xl font-bold">Board Exam FAQs</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {faqs.map((faq) => (
-              <div key={faq.question} className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                <h3 className="text-sm font-semibold">{faq.question}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/50">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    </section>
-  );
-}

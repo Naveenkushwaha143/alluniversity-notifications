@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { absoluteUrl, buildBreadcrumbSchema, buildFaqSchema, importantStates, pageFaqs, stateSlug, universitySlug } from '@/lib/seo-pages';
+import { absoluteUrl, buildBreadcrumbSchema, buildFaqSchema, pageFaqs, universitySlug } from '@/lib/seo-pages';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +18,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function UniversitiesPage() {
-  const universities = await db.university.findMany({
+type UniversitiesPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
+export default async function UniversitiesPage({ searchParams }: UniversitiesPageProps) {
+  const params = await searchParams || {};
+  const selectedState = getParam(params, 'state');
+  const selectedType = getParam(params, 'type');
+  const query = getParam(params, 'q').trim().toLowerCase();
+  const allUniversities = await db.university.findMany({
     where: { isActive: true },
     include: { _count: { select: { notices: true } } },
     orderBy: [{ state: 'asc' }, { district: 'asc' }, { name: 'asc' }],
@@ -27,6 +40,15 @@ export default async function UniversitiesPage() {
   }).catch((error) => {
     console.error('Error loading universities SEO page:', error);
     return [];
+  });
+  const states = Array.from(new Set(allUniversities.map((university) => university.state))).sort((a, b) => a.localeCompare(b));
+  const types = Array.from(new Set(allUniversities.map((university) => university.type))).sort((a, b) => a.localeCompare(b));
+  const universities = allUniversities.filter((university) => {
+    const universityText = `${university.name} ${university.shortName} ${university.state} ${university.district || ''} ${university.type} ${university.description || ''}`.toLowerCase();
+    const matchesQuery = !query || universityText.includes(query);
+    const matchesState = !selectedState || university.state === selectedState;
+    const matchesType = !selectedType || university.type === selectedType;
+    return matchesQuery && matchesState && matchesType;
   });
 
   const faqs = pageFaqs('University result and notices 2026');
@@ -64,20 +86,65 @@ export default async function UniversitiesPage() {
           </p>
         </header>
 
-        <section className="mb-8">
-          <h2 className="text-xl font-bold">Browse by State</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {importantStates.map((state) => (
-              <Link
-                key={state}
-                href={`/states/${stateSlug(state)}`}
-                className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/10 hover:text-white"
+        <div className="mb-7 flex items-center gap-2 overflow-x-auto pb-1">
+          <Link href="/universities" className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${!selectedState ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+            All ({allUniversities.length})
+          </Link>
+          {states.map((state) => (
+            <Link key={state} href={`/universities?state=${encodeURIComponent(state)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedState === state ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+              {state} ({allUniversities.filter((university) => university.state === state).length})
+            </Link>
+          ))}
+        </div>
+
+        <form method="get" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-6">
+          <div className="grid gap-3 md:grid-cols-[1fr_188px_188px_auto]">
+            <label className="grid gap-1">
+              <span className="sr-only">Search university</span>
+              <input
+                name="q"
+                defaultValue={getParam(params, 'q')}
+                placeholder="AKTU, Bihar, medical..."
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">State</span>
+              <select
+                name="state"
+                defaultValue={selectedState}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
               >
-                {state} University Notices
-              </Link>
-            ))}
+                <option value="">All states</option>
+                {states.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">Type</span>
+              <select
+                name="type"
+                defaultValue={selectedType}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All types</option>
+                {types.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button type="submit" className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200">
+                Filter
+              </button>
+              <a href="/universities" className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-sm font-semibold text-white/65 hover:bg-white/10">
+                Clear
+              </a>
+            </div>
           </div>
-        </section>
+          <p className="mt-3 text-xs text-white/40">{universities.length} universities found</p>
+        </form>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {universities.map((university) => (
@@ -120,6 +187,12 @@ export default async function UniversitiesPage() {
             </article>
           ))}
         </section>
+
+        {universities.length === 0 && (
+          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-white/65">
+            No university matched this filter. Clear filters or search another state/name.
+          </div>
+        )}
 
         <section className="mt-10 border-t border-white/10 pt-6">
           <h2 className="text-xl font-bold">University Result FAQs</h2>

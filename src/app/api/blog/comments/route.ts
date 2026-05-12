@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { sendBlogCommentEmail } from '@/lib/comment-email';
+import { publicCacheHeaders, rateLimit } from '@/lib/api-guard';
 
 function cleanText(value: unknown, maxLength: number) {
   return String(value || '').trim().slice(0, maxLength);
@@ -25,6 +26,8 @@ export async function GET(request: NextRequest) {
       success: true,
       total: comments.length,
       data: comments,
+    }, {
+      headers: publicCacheHeaders(30, 120),
     });
   } catch (error) {
     console.error('Error fetching blog comments:', error);
@@ -34,6 +37,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'blog:comments', limit: 8, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const postId = cleanText(body.postId, 120);
     const name = cleanText(body.name, 80);

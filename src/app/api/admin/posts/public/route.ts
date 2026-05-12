@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { boundedInt, publicCacheHeaders } from '@/lib/api-guard';
 
 // GET /api/admin/posts/public - Return only active admin posts, ordered by pinned first then createdAt desc
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 100);
+    const limit = boundedInt(searchParams.get('limit'), 100, 1, 100);
 
     const posts = await db.adminPost.findMany({
       where: { isActive: true },
@@ -41,9 +42,7 @@ export async function GET(request: NextRequest) {
       total: publicPosts.length,
       data: publicPosts,
     }, {
-      headers: {
-        'Cache-Control': 'public, max-age=30, stale-while-revalidate=120',
-      },
+      headers: publicCacheHeaders(45, 180),
     });
   } catch (error) {
     console.error('Error fetching public posts:', error);

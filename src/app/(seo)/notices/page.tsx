@@ -18,6 +18,15 @@ export const metadata: Metadata = {
   },
 };
 
+type NoticesPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
+
 function formatDate(value: Date) {
   return new Intl.DateTimeFormat('en-IN', {
     day: '2-digit',
@@ -26,8 +35,12 @@ function formatDate(value: Date) {
   }).format(value);
 }
 
-export default async function NoticesPage() {
-  const notices = await db.notice.findMany({
+export default async function NoticesPage({ searchParams }: NoticesPageProps) {
+  const params = await searchParams || {};
+  const selectedState = getParam(params, 'state');
+  const selectedCategory = getParam(params, 'category');
+  const query = getParam(params, 'q').trim().toLowerCase();
+  const allNotices = await db.notice.findMany({
     include: {
       university: {
         select: {
@@ -41,11 +54,20 @@ export default async function NoticesPage() {
       },
     },
     orderBy: { datePublished: 'desc' },
-    take: 60,
+    take: 200,
   }).catch((error) => {
     console.error('Error loading notices SEO page:', error);
     return [];
   });
+  const states = Array.from(new Set(allNotices.map((notice) => notice.university.state))).sort((a, b) => a.localeCompare(b));
+  const categories = Array.from(new Set(allNotices.map((notice) => notice.category))).sort((a, b) => a.localeCompare(b));
+  const notices = allNotices.filter((notice) => {
+    const noticeText = `${notice.title} ${notice.description || ''} ${notice.category} ${notice.university.name} ${notice.university.shortName} ${notice.university.state}`.toLowerCase();
+    const matchesQuery = !query || noticeText.includes(query);
+    const matchesState = !selectedState || notice.university.state === selectedState;
+    const matchesCategory = !selectedCategory || notice.category === selectedCategory;
+    return matchesQuery && matchesState && matchesCategory;
+  }).slice(0, 60);
 
   const faqs = pageFaqs('University notices 2026');
   const collectionSchema = {
@@ -87,6 +109,66 @@ export default async function NoticesPage() {
           </p>
         </div>
 
+        <div className="mb-7 flex items-center gap-2 overflow-x-auto pb-1">
+          <Link href="/notices" className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${!selectedState ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+            All ({allNotices.length})
+          </Link>
+          {states.map((state) => (
+            <Link key={state} href={`/notices?state=${encodeURIComponent(state)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedState === state ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+              {state} ({allNotices.filter((notice) => notice.university.state === state).length})
+            </Link>
+          ))}
+        </div>
+
+        <form method="get" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-6">
+          <div className="grid gap-3 md:grid-cols-[1fr_188px_188px_auto]">
+            <label className="grid gap-1">
+              <span className="sr-only">Search notice</span>
+              <input
+                name="q"
+                defaultValue={getParam(params, 'q')}
+                placeholder="result, admit card, admission..."
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">State</span>
+              <select
+                name="state"
+                defaultValue={selectedState}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All states</option>
+                {states.map((state) => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">Category</span>
+              <select
+                name="category"
+                defaultValue={selectedCategory}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button type="submit" className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200">
+                Filter
+              </button>
+              <a href="/notices" className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-sm font-semibold text-white/65 hover:bg-white/10">
+                Clear
+              </a>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-white/40">{notices.length} notices shown</p>
+        </form>
+
         <div className="grid gap-4">
           {notices.map((notice) => (
             <article key={notice.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
@@ -117,6 +199,12 @@ export default async function NoticesPage() {
             </article>
           ))}
         </div>
+
+        {notices.length === 0 && (
+          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-white/65">
+            No notices found for this filter. Clear filters or try another keyword.
+          </div>
+        )}
 
         <section className="mt-10 border-t border-white/10 pt-6">
           <h2 className="text-xl font-bold">University Notice FAQs</h2>

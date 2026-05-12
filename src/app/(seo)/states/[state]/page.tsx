@@ -8,7 +8,13 @@ export const dynamic = 'force-dynamic';
 
 type StatePageProps = {
   params: Promise<{ state: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
 
 async function resolveState(slug: string) {
   const dbStates = await db.university.groupBy({
@@ -41,12 +47,17 @@ export async function generateMetadata({ params }: StatePageProps): Promise<Meta
   };
 }
 
-export default async function StateUniversityPage({ params }: StatePageProps) {
+export default async function StateUniversityPage({ params, searchParams }: StatePageProps) {
   const { state: stateParam } = await params;
+  const queryParams = await searchParams || {};
   const state = await resolveState(stateParam);
   if (!state) notFound();
+  const selectedDistrict = getParam(queryParams, 'district');
+  const selectedType = getParam(queryParams, 'type');
+  const selectedCategory = getParam(queryParams, 'category');
+  const query = getParam(queryParams, 'q').trim().toLowerCase();
 
-  const [universities, notices] = await Promise.all([
+  const [allUniversities, allNotices] = await Promise.all([
     db.university.findMany({
       where: { isActive: true, state },
       include: { _count: { select: { notices: true } } },
@@ -62,6 +73,22 @@ export default async function StateUniversityPage({ params }: StatePageProps) {
   ]).catch((error) => {
     console.error('Error loading state SEO page:', error);
     return [[], []] as const;
+  });
+  const districts = Array.from(new Set(allUniversities.map((university) => university.district || state))).sort((a, b) => a.localeCompare(b));
+  const types = Array.from(new Set(allUniversities.map((university) => university.type))).sort((a, b) => a.localeCompare(b));
+  const categories = Array.from(new Set(allNotices.map((notice) => notice.category))).sort((a, b) => a.localeCompare(b));
+  const universities = allUniversities.filter((university) => {
+    const universityText = `${university.name} ${university.shortName} ${university.district || ''} ${university.type} ${university.description || ''}`.toLowerCase();
+    const matchesQuery = !query || universityText.includes(query);
+    const matchesDistrict = !selectedDistrict || (university.district || state) === selectedDistrict;
+    const matchesType = !selectedType || university.type === selectedType;
+    return matchesQuery && matchesDistrict && matchesType;
+  });
+  const notices = allNotices.filter((notice) => {
+    const noticeText = `${notice.title} ${notice.category} ${notice.university.name} ${notice.university.shortName}`.toLowerCase();
+    const matchesQuery = !query || noticeText.includes(query);
+    const matchesCategory = !selectedCategory || notice.category === selectedCategory;
+    return matchesQuery && matchesCategory;
   });
 
   const faqs = [...stateUniversityFaqs(state), ...pageFaqs(`${state} university result and notices 2026`)];
@@ -92,6 +119,79 @@ export default async function StateUniversityPage({ params }: StatePageProps) {
           </p>
         </header>
 
+        <div className="mb-7 flex items-center gap-2 overflow-x-auto pb-1">
+          <a href={`/states/${stateSlug(state)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${!selectedDistrict ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+            All ({allUniversities.length})
+          </a>
+          {districts.slice(0, 18).map((district) => (
+            <a key={district} href={`/states/${stateSlug(state)}?district=${encodeURIComponent(district)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedDistrict === district ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+              {district} ({allUniversities.filter((university) => (university.district || state) === district).length})
+            </a>
+          ))}
+        </div>
+
+        <form method="get" className="mb-8 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-6">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[1fr_170px_170px_190px_auto]">
+            <label className="grid gap-1">
+              <span className="sr-only">Search in {state}</span>
+              <input
+                name="q"
+                defaultValue={getParam(queryParams, 'q')}
+                placeholder="university, result, admit card..."
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">District</span>
+              <select
+                name="district"
+                defaultValue={selectedDistrict}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All districts</option>
+                {districts.map((district) => (
+                  <option key={district} value={district}>{district}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">Type</span>
+              <select
+                name="type"
+                defaultValue={selectedType}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All types</option>
+                {types.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1">
+              <span className="sr-only">Notice category</span>
+              <select
+                name="category"
+                defaultValue={selectedCategory}
+                className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+              >
+                <option value="">All notices</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-end gap-2">
+              <button type="submit" className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200">
+                Filter
+              </button>
+              <a href={`/states/${stateSlug(state)}`} className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-sm font-semibold text-white/65 hover:bg-white/10">
+                Clear
+              </a>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-white/40">{universities.length} universities and {notices.length} notices found</p>
+        </form>
+
         <section className="grid gap-4 lg:grid-cols-[1fr_1.15fr]">
           <div>
             <h2 className="text-xl font-bold">{state} Universities</h2>
@@ -108,6 +208,11 @@ export default async function StateUniversityPage({ params }: StatePageProps) {
                   </p>
                 </article>
               ))}
+              {universities.length === 0 && (
+                <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-white/65">
+                  No university found for this filter.
+                </div>
+              )}
             </div>
           </div>
 
@@ -125,6 +230,11 @@ export default async function StateUniversityPage({ params }: StatePageProps) {
                   </h3>
                 </article>
               ))}
+              {notices.length === 0 && (
+                <div className="rounded-lg border border-amber-300/20 bg-amber-300/10 p-4 text-sm text-white/65">
+                  No notice found for this filter.
+                </div>
+              )}
             </div>
           </div>
         </section>

@@ -8,6 +8,13 @@ const viewToPath: Record<string, string> = {
   board: '/board',
 };
 
+const pathToAppView: Record<string, string> = {
+  '/universities': 'universities',
+  '/notices': 'notices',
+  '/entrance': 'entrance',
+  '/board': 'board',
+};
+
 export function proxy(request: NextRequest) {
   const host = request.headers.get('host')?.split(':')[0]?.toLowerCase();
   const url = request.nextUrl.clone();
@@ -37,6 +44,14 @@ export function proxy(request: NextRequest) {
       url.searchParams.delete('state');
       return NextResponse.redirect(url, 308);
     }
+  }
+
+  const appView = pathToAppView[url.pathname];
+
+  if (appView) {
+    url.pathname = '/';
+    url.searchParams.set('view', appView);
+    return NextResponse.rewrite(url);
   }
 
   return NextResponse.next();

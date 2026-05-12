@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MAX_STORED_NOTIFICATIONS } from '@/lib/notification-cleanup';
+import { boundedInt, publicCacheHeaders } from '@/lib/api-guard';
+import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 
 export async function GET(request: NextRequest) {
+  const cacheKey = `live-notifications:${request.nextUrl.search}`;
+
   try {
     const { searchParams } = new URL(request.url);
-    const limit = Math.min(
-      parseInt(searchParams.get('limit') || String(MAX_STORED_NOTIFICATIONS)),
-      MAX_STORED_NOTIFICATIONS
-    );
+    const limit = boundedInt(searchParams.get('limit'), MAX_STORED_NOTIFICATIONS, 1, MAX_STORED_NOTIFICATIONS);
 
     const [notices, exams] = await Promise.all([
       db.notice.findMany({
@@ -61,17 +62,27 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       total: liveItems.length,
       data: liveItems,
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=15, stale-while-revalidate=60',
-      },
+    };
+    setCachedResponse(cacheKey, payload);
+
+    return NextResponse.json(payload, {
+      headers: publicCacheHeaders(20, 120),
     });
   } catch (error) {
     console.error('Error fetching live notifications:', error);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          ...publicCacheHeaders(15, 120),
+          'X-Data-Source': 'stale-cache',
+        },
+      });
+    }
     return NextResponse.json(
       { success: false, message: 'Failed to fetch live notifications', error: String(error) },
       { status: 500 }

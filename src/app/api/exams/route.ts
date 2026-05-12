@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scrapeAndStoreExamNotifications } from '@/lib/exam-scraper';
+import { boundedInt, publicCacheHeaders, rateLimit } from '@/lib/api-guard';
+import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 
 // GET /api/exams - List exam notifications
 export async function GET(request: NextRequest) {
+  const cacheKey = `exams:${request.nextUrl.search}`;
+
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const category = searchParams.get('category');
     const state = searchParams.get('state');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = boundedInt(searchParams.get('limit'), 50, 1, 100);
 
     const where: Record<string, unknown> = { isActive: true };
     if (type) where.examType = type.toUpperCase();
@@ -22,14 +26,28 @@ export async function GET(request: NextRequest) {
       take: limit,
     });
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       message: 'Exam notifications fetched successfully',
       total: exams.length,
       data: exams,
+    };
+    setCachedResponse(cacheKey, payload);
+
+    return NextResponse.json(payload, {
+      headers: publicCacheHeaders(45, 180),
     });
   } catch (error) {
     console.error('Error fetching exam notifications:', error);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          ...publicCacheHeaders(30, 180),
+          'X-Data-Source': 'stale-cache',
+        },
+      });
+    }
     return NextResponse.json(
       { success: false, message: 'Failed to fetch exam notifications', error: String(error) },
       { status: 500 }
@@ -40,6 +58,9 @@ export async function GET(request: NextRequest) {
 // POST /api/exams - Fetch exam notifications from official exam/board websites
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'exams:post', limit: 4, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const { type } = body;
 

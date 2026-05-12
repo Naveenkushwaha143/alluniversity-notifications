@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { isAuthenticated } from '@/lib/admin-auth';
 import { MAX_STORED_BLOG_POSTS, cleanupOldBlogPosts } from '@/lib/blog-cleanup';
+import { boundedInt, publicCacheHeaders } from '@/lib/api-guard';
 
 // Helper: require admin auth
 async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
@@ -29,9 +30,8 @@ export async function GET(request: NextRequest) {
     const all = searchParams.get('all') === 'true';
     const category = searchParams.get('category');
     const tag = searchParams.get('tag');
-    const requestedLimit = parseInt(searchParams.get('limit') || String(MAX_STORED_BLOG_POSTS));
-    const limit = Math.min(requestedLimit, MAX_STORED_BLOG_POSTS);
-    const page = parseInt(searchParams.get('page') || '1');
+    const limit = boundedInt(searchParams.get('limit'), MAX_STORED_BLOG_POSTS, 1, MAX_STORED_BLOG_POSTS);
+    const page = boundedInt(searchParams.get('page'), 1, 1, 1000);
     const skip = (page - 1) * limit;
 
     if (all) {
@@ -71,6 +71,8 @@ export async function GET(request: NextRequest) {
         ...post,
         commentsCount: post._count.comments,
       })),
+    }, {
+      headers: all ? undefined : publicCacheHeaders(30, 120),
     });
   } catch (error) {
     console.error('Error fetching blog posts:', error);

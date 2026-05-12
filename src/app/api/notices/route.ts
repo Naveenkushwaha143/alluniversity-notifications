@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { cleanupStoredNotifications } from '@/lib/notification-cleanup';
+import { boundedInt, publicCacheHeaders, rateLimit } from '@/lib/api-guard';
+import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 
 // GET /api/notices - Get notices with filtering
 export async function GET(request: NextRequest) {
+  const cacheKey = `notices:${request.nextUrl.search}`;
+
   try {
     const { searchParams } = new URL(request.url);
     const universityId = searchParams.get('universityId');
     const category = searchParams.get('category');
     const state = searchParams.get('state');
     const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const page = parseInt(searchParams.get('page') || '1');
+    const limit = boundedInt(searchParams.get('limit'), 50, 1, 100);
+    const page = boundedInt(searchParams.get('page'), 1, 1, 1000);
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -59,7 +63,7 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       message: "Notices fetched successfully!",
       total,
@@ -68,13 +72,23 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
       categories: categories.map(c => c.category),
       data: notices
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=20, stale-while-revalidate=90',
-      },
+    };
+    setCachedResponse(cacheKey, payload);
+
+    return NextResponse.json(payload, {
+      headers: publicCacheHeaders(45, 180),
     });
   } catch (error) {
     console.error("Error fetching notices:", error);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          ...publicCacheHeaders(30, 180),
+          'X-Data-Source': 'stale-cache',
+        },
+      });
+    }
     return NextResponse.json(
       { success: false, message: "Failed to fetch notices", error: String(error) },
       { status: 500 }
@@ -83,8 +97,11 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE /api/notices - Clean up old notices
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'notices:delete', limit: 2, windowMs: 60_000 });
+    if (limited) return limited;
+
     const cleanupResult = await cleanupStoredNotifications();
 
     return NextResponse.json({

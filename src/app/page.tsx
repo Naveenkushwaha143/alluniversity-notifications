@@ -42,6 +42,34 @@ import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 import { EXAM_DETAILS, type ExamDetail } from '@/lib/entrance-exam-details';
 
+function pageSlug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 90);
+}
+
+const BOARD_DETAIL_SLUG_ALIASES: Record<string, string> = {
+  'cisce-icse-isc': 'cisce-board-icse-isc',
+  'haryana-board-bseh': 'haryana-board-hbse-bseh',
+  'delhi-board': 'delhi-board-education-department',
+  'karnataka-board-kseeb': 'karnataka-board-kseab',
+  'tamil-nadu-board-tnbse': 'tamil-nadu-board-dge-tndge',
+  'west-bengal-board-wbbse': 'west-bengal-board-wbbse-wbchse',
+  'kerala-board-dhse': 'kerala-board-pareeksha-bhavan-dhse',
+  'telangana-board-bse': 'telangana-board-bse-tsbie',
+  'ap-board-bieap': 'andhra-pradesh-board-bseap-bieap',
+  'odisha-board-bse': 'odisha-board-bse-chse',
+  'jammu-and-kashmir-board-jkbose': 'jkbose',
+};
+
+function boardDetailSlug(value: string) {
+  const slug = pageSlug(value);
+  return BOARD_DETAIL_SLUG_ALIASES[slug] || slug;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    TYPES
    ═══════════════════════════════════════════════════════════════ */
@@ -363,10 +391,12 @@ const UP_ALL_DISTRICTS = [
 ];
 
 // Comprehensive board exams from ALL states with logos
-const BOARD_EXAMS: {
+type BoardExam = {
   name: string; desc: string; website: string; color: string; state: string; icon: string; logo?: string;
   exams?: string; notices?: string[];
-}[] = [
+};
+
+const BOARD_EXAMS: BoardExam[] = [
   // ── National ──
   { name: 'CBSE Board', desc: 'Central Board of Secondary Education - 10th & 12th board exams across India.', website: 'https://cbse.gov.in', color: 'from-blue-500 to-indigo-500', state: 'National', icon: '📘', logo: '/logos/delhi-logo.png', exams: '10th & 12th', notices: ['CBSE 2025 board exam date sheet released', 'CBSE results declared for class 12', 'CBSE new assessment pattern for 2025'] },
   { name: 'CISCE (ICSE/ISC)', desc: 'Council for the Indian School Certificate Examinations.', website: 'https://cisce.org', color: 'from-sky-500 to-blue-500', state: 'National', icon: '📕', logo: '/logos/delhi-logo.png', exams: '10th (ICSE) & 12th (ISC)', notices: ['ICSE 2025 timetable released', 'ISC semester exam schedule updated'] },
@@ -405,6 +435,17 @@ const BOARD_EXAMS: {
   { name: 'Chhattisgarh Board (CGBSE)', desc: 'Chhattisgarh Board of Secondary Education.', website: 'https://cgbse.nic.in', color: 'from-fuchsia-500 to-violet-500', state: 'Chhattisgarh', icon: '📕', exams: '10th & 12th', notices: ['CGBSE result 2025 announced'] },
   { name: 'Uttarakhand Board (UBSE)', desc: 'Uttarakhand Board of School Education.', website: 'https://ubse.uk.gov.in', color: 'from-teal-500 to-cyan-500', state: 'Uttarakhand', icon: '📓', exams: '10th & 12th', notices: ['UK Board 2025 results'] },
   { name: 'Himachal Board (HPBOSE)', desc: 'Himachal Pradesh Board of School Education.', website: 'https://hpbose.org', color: 'from-indigo-500 to-violet-500', state: 'Himachal Pradesh', icon: '📔', exams: '10th & 12th', notices: ['HP Board result 2025'] },
+  { name: 'Assam Board (SEBA/AHSEC)', desc: 'Assam HSLC and Higher Secondary board exam, routine, admit card and result updates.', website: 'https://sebaonline.org', color: 'from-emerald-500 to-green-500', state: 'Assam', icon: 'AS', exams: '10th (HSLC) & 12th (HS)', notices: ['Assam HSLC result updates', 'AHSEC routine and admit card notices'] },
+  { name: 'Arunachal Pradesh Board', desc: 'Arunachal Pradesh school exam, date sheet, admit card and result updates.', website: 'https://education.arunachal.gov.in', color: 'from-sky-500 to-cyan-500', state: 'Arunachal Pradesh', icon: 'AR', exams: '10th & 12th', notices: ['Arunachal board exam schedule updates'] },
+  { name: 'Goa Board (GBSHSE)', desc: 'Goa Board SSC and HSSC exam timetable, hall ticket and result updates.', website: 'https://gbshse.in', color: 'from-cyan-500 to-blue-500', state: 'Goa', icon: 'GA', exams: '10th (SSC) & 12th (HSSC)', notices: ['Goa board result and timetable updates'] },
+  { name: 'Manipur Board (BOSEM/COHSEM)', desc: 'Manipur HSLC and HSE board exam routine, admit card and result updates.', website: 'https://bosem.in', color: 'from-pink-500 to-rose-500', state: 'Manipur', icon: 'MN', exams: '10th (HSLC) & 12th (HSE)', notices: ['Manipur HSLC/HSE exam routine updates'] },
+  { name: 'Meghalaya Board (MBOSE)', desc: 'Meghalaya SSLC and HSSLC board exam routine and result updates.', website: 'https://mbose.in', color: 'from-lime-500 to-emerald-500', state: 'Meghalaya', icon: 'ML', exams: '10th (SSLC) & 12th (HSSLC)', notices: ['MBOSE result and routine updates'] },
+  { name: 'Mizoram Board (MBSE)', desc: 'Mizoram HSLC and HSSLC board exam timetable, admit card and result updates.', website: 'https://mbse.edu.in', color: 'from-violet-500 to-purple-500', state: 'Mizoram', icon: 'MZ', exams: '10th (HSLC) & 12th (HSSLC)', notices: ['MBSE routine and result updates'] },
+  { name: 'Nagaland Board (NBSE)', desc: 'Nagaland HSLC and HSSLC board exam routine, admit card and result notices.', website: 'https://nbsenl.edu.in', color: 'from-amber-500 to-orange-500', state: 'Nagaland', icon: 'NL', exams: '10th (HSLC) & 12th (HSSLC)', notices: ['NBSE exam routine and result notices'] },
+  { name: 'Sikkim Board', desc: 'Sikkim school board exam schedule, admit card and result updates.', website: 'https://sikkim.gov.in', color: 'from-red-500 to-orange-500', state: 'Sikkim', icon: 'SK', exams: '10th & 12th', notices: ['Sikkim board exam and result updates'] },
+  { name: 'Tripura Board (TBSE)', desc: 'Tripura Madhyamik and HS exam routine, admit card and result updates.', website: 'https://tbse.tripura.gov.in', color: 'from-blue-500 to-indigo-500', state: 'Tripura', icon: 'TR', exams: '10th (Madhyamik) & 12th (HS)', notices: ['TBSE result and exam routine updates'] },
+  { name: 'Jammu & Kashmir Board (JKBOSE)', desc: 'JKBOSE class 10 and 12 date sheet, admit card and result updates.', website: 'https://jkbose.nic.in', color: 'from-teal-500 to-emerald-500', state: 'Jammu & Kashmir', icon: 'JK', exams: '10th & 12th', notices: ['JKBOSE date sheet and result updates'] },
+  { name: 'Ladakh Board Updates', desc: 'Ladakh school exam notices and JKBOSE linked date sheet/result updates.', website: 'https://jkbose.nic.in', color: 'from-slate-500 to-cyan-500', state: 'Ladakh', icon: 'LA', exams: '10th & 12th', notices: ['Ladakh board exam notices and result updates'] },
 ];
 
 // Board state visual meta — covers every state that appears in BOARD_EXAMS
@@ -437,6 +478,48 @@ const DEFAULT_BOARD_STATE_META = { label: 'Other', color: 'text-gray-400', gradi
 
 function getBoardStateMeta(state: string) {
   return BOARD_STATE_META[state] || DEFAULT_BOARD_STATE_META;
+}
+
+function getEntranceDetail(exam: (typeof ENTRANCE_EXAMS)[number] | null): ExamDetail | null {
+  if (!exam) return null;
+  const savedDetail = EXAM_DETAILS[exam.name];
+  if (savedDetail) return savedDetail;
+
+  return {
+    fullName: exam.desc,
+    conductingBody: exam.level === 'National' ? 'National / official exam authority' : `${exam.state} official exam authority`,
+    eligibility: [
+      'Student must meet the course eligibility given in the official notification.',
+      'Keep class 10/12 marksheet, photo, signature, ID proof and category certificate ready if applicable.',
+      'Age limit, subject combination and minimum marks can change by course, so verify from the official website before applying.',
+    ],
+    examPattern: 'Exam pattern, mode, marking scheme and syllabus are published in the official information bulletin or admission brochure.',
+    syllabus: [
+      'Check the latest official syllabus PDF before preparation.',
+      'Focus on the subjects required for your selected course and category.',
+      'Previous year papers and model papers are useful for understanding question level.',
+    ],
+    importantDates: [
+      { event: 'Notification', timing: 'Check official website regularly' },
+      { event: 'Application / Admit Card / Result', timing: 'Updated on official portal after release' },
+    ],
+    applicationFee: 'Application fee depends on course and category. Confirm fee from official notification before payment.',
+    officialLinks: [{ label: `${exam.name} Official Website`, url: exam.website }],
+    relatedExams: [],
+    tips: [
+      'Read the official notification completely before filling the form.',
+      'Use only official links for registration, admit card and result.',
+      'Save application number and payment receipt for future login.',
+    ],
+  };
+}
+
+function getBoardHelp(board: BoardExam) {
+  return [
+    `${board.name} date sheet, admit card and result updates are published on the official board website.`,
+    'Students should verify roll number, school code, subject list and exam centre from the official admit card.',
+    'Result, compartment, rechecking and migration notices should be checked from the original board portal only.',
+  ];
 }
 
 const NOTICE_CATEGORIES = ['All', 'Exam', 'Result', 'Admission', 'Holiday', 'Fee', 'Recruitment', 'Tender', 'Academic', 'Convocation', 'General', 'Notification', 'Circular', 'Syllabus', 'Workshop', 'Scholarship'];
@@ -736,6 +819,7 @@ export default function Home() {
   const [entranceLevelFilter, setEntranceLevelFilter] = useState<string>('All');
   const [entranceSearch, setEntranceSearch] = useState('');
   const [selectedEntranceExam, setSelectedEntranceExam] = useState<string | null>(null);
+  const [selectedBoardExam, setSelectedBoardExam] = useState<string | null>(null);
 
   /* ─── Admin State ─── */
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1638,12 +1722,8 @@ export default function Home() {
   }, [view]);
 
   const handleUnivClick = useCallback((uni: University) => {
-    setSelectedUnivId(uni.id);
-    setSelectedNoticeState('all');
-    setSelectedCategory('all');
-    setNoticeSearch('');
-    switchView('notices');
-  }, [switchView]);
+    window.location.href = `/universities/${pageSlug(uni.shortName || uni.name)}`;
+  }, []);
 
   const lastScrapeTime = useRef<number>(0);
   const SCRAPE_COOLDOWN = 45000; // 45 seconds cooldown between user scrapes
@@ -1839,6 +1919,8 @@ export default function Home() {
       if (queryState && STATES.includes(queryState as typeof STATES[number])) {
         setSelectedState(queryState);
         setSelectedNoticeState(queryState);
+        setBoardStateFilter(queryState === 'Uttar Pradesh' ? 'Uttar Pradesh' : queryState);
+        setEntranceStateFilter(queryState === 'Uttar Pradesh' ? 'UP' : queryState);
       }
 
       if (pathView) {
@@ -3060,7 +3142,7 @@ export default function Home() {
                 {/* Districts */}
                 <div className="space-y-2">
                   {districts.map(({ district, unis }) => {
-                    const isOpen = openDistricts.has(`${state}-${district}`) || unis.length <= 3 || selectedDistrict !== 'all' || selectedType !== 'all' || debouncedUnivSearch;
+                    const isOpen = openDistricts.has(`${state}-${district}`) || unis.length <= 3 || selectedDistrict !== 'all' || selectedType !== 'all' || Boolean(debouncedUnivSearch);
                     return (
                       <Collapsible
                         key={`${state}-${district}`}
@@ -3536,8 +3618,16 @@ export default function Home() {
 
   const renderEntranceView = () => {
     const selectedExam = selectedEntranceExam ? ENTRANCE_EXAMS.find(e => e.name === selectedEntranceExam) : null;
-    const selectedDetail = selectedEntranceExam ? EXAM_DETAILS[selectedEntranceExam] : null;
+    const selectedDetail = getEntranceDetail(selectedExam || null);
     const isExamSelected = selectedExam && selectedDetail;
+    const selectedExamNotifications = selectedExam
+      ? rtNotifications.filter((notif) => {
+          const haystack = `${notif.title} ${notif.message} ${notif.category} ${notif.state}`.toLowerCase();
+          return haystack.includes(selectedExam.name.toLowerCase())
+            || haystack.includes(selectedExam.category.toLowerCase())
+            || (selectedExam.state !== 'National' && haystack.includes(selectedExam.state.toLowerCase()));
+        }).slice(0, 6)
+      : [];
 
     return (
     <div className="space-y-5">
@@ -3585,7 +3675,7 @@ export default function Home() {
       {/* State Filter Tabs */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
         {ENTRANCE_STATES.map((s) => {
-          const meta = s === 'All' ? { bg: '', color: '' } : getBoardStateMeta(s === 'National' ? 'National' : s === 'UP' ? 'UP' : s);
+          const meta = s === 'All' ? { bg: '', color: '', logo: '' } : getBoardStateMeta(s === 'National' ? 'National' : s === 'UP' ? 'UP' : s);
           const count = s === 'All' ? ENTRANCE_EXAMS.length : ENTRANCE_EXAMS.filter(e => e.state === s).length;
           const isActive = entranceStateFilter === s;
           return (
@@ -3684,7 +3774,7 @@ export default function Home() {
           {filteredEntranceExams.map((exam, i) => {
             const stateMeta = getBoardStateMeta(exam.state);
             const isSelected = selectedEntranceExam === exam.name;
-            const hasDetail = !!EXAM_DETAILS[exam.name];
+            const hasDetail = true;
             return (
               <motion.div
                 key={exam.name}
@@ -3698,16 +3788,7 @@ export default function Home() {
                   <div
                     className={`prism-inner glass-card focus-card entrance-card rounded-xl overflow-hidden border cursor-pointer transition-all duration-300 ${isSelected ? 'ring-2 ring-cyan-400/50 shadow-lg shadow-cyan-500/10' : ''} ${stateMeta.border}`}
                     onClick={() => {
-                      if (hasDetail) {
-                        setSelectedEntranceExam(isSelected ? null : exam.name);
-                        if (!isSelected) {
-                          setTimeout(() => {
-                            document.getElementById(`exam-detail-${exam.name}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                          }, 100);
-                        }
-                      } else {
-                        window.open(exam.website, '_blank');
-                      }
+                      window.location.href = `/entrance/${pageSlug(exam.name)}`;
                     }}
                   >
                     <div className="prism-rainbow rounded-xl" />
@@ -3756,8 +3837,8 @@ export default function Home() {
                             </a>
                             {hasDetail && (
                               <span className="focus-meta text-white/55 text-[10px] flex items-center gap-0.5">
-                                {isSelected ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                {isSelected ? 'Hide' : 'View Details'}
+                                <ExternalLink className="w-3 h-3" />
+                                Open Details
                               </span>
                             )}
                           </div>
@@ -3843,6 +3924,43 @@ export default function Home() {
                     Visit Official Website
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
+                </div>
+
+                {/* Exam Notifications */}
+                <div>
+                  <h4 className="text-white font-semibold text-sm flex items-center gap-2 mb-3">
+                    <Bell className="w-4 h-4 text-emerald-400" />
+                    Exam Notifications
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedExamNotifications.length > 0 ? selectedExamNotifications.map((notif) => (
+                      <a
+                        key={notif.id}
+                        href={notif.url || selectedExam.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-3 bg-white/5 rounded-lg p-3 border border-white/5 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                          <Bell className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white text-xs font-medium line-clamp-1">{notif.title}</p>
+                          <p className="text-white/40 text-[10px] line-clamp-2">{notif.message}</p>
+                        </div>
+                      </a>
+                    )) : selectedDetail.importantDates.map((d, idx) => (
+                      <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3 border border-white/5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                          <Clock className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white text-xs font-medium">{d.event}</p>
+                          <p className="text-white/40 text-[10px]">{d.timing}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Eligibility */}
@@ -4045,8 +4163,7 @@ export default function Home() {
     const grouped: Record<string, typeof BOARD_EXAMS> = {};
     BOARD_EXAMS.forEach(b => {
       const show = boardStateFilter === 'all'
-        || b.state === boardStateFilter
-        || (boardStateFilter === 'other' && b.state !== 'National' && b.state !== 'Bihar' && b.state !== 'Haryana' && b.state !== 'Delhi' && b.state !== 'UP');
+        || b.state === boardStateFilter;
       if (show || b.state === 'National') {
         if (!grouped[b.state]) grouped[b.state] = [];
         grouped[b.state].push(b);
@@ -4058,7 +4175,17 @@ export default function Home() {
   const renderBoardView = () => {
     const totalFiltered = Object.values(boardsByState).flat().length;
     // Board filter buttons — uses BOARD_STATE_META for reliable lookups
-    const boardFilterStates = ['National', 'Bihar', 'Haryana', 'Delhi', 'UP'];
+    const boardFilterStates = BOARD_STATE_ORDER;
+    const selectedBoard = selectedBoardExam ? BOARD_EXAMS.find((board) => board.name === selectedBoardExam) : null;
+    const selectedBoardMeta = selectedBoard ? getBoardStateMeta(selectedBoard.state) : null;
+    const selectedBoardLiveNotifications = selectedBoard
+      ? rtNotifications.filter((notif) => {
+          const haystack = `${notif.title} ${notif.message} ${notif.category} ${notif.state}`.toLowerCase();
+          return haystack.includes(selectedBoard.name.toLowerCase())
+            || haystack.includes(selectedBoard.state.toLowerCase())
+            || haystack.includes('board');
+        }).slice(0, 6)
+      : [];
 
     return (
       <div className="space-y-6">
@@ -4108,16 +4235,6 @@ export default function Home() {
               </button>
             );
           })}
-          <button
-            onClick={() => setBoardStateFilter('other')}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              boardStateFilter === 'other'
-                ? 'bg-linear-to-r from-amber-500/20 to-orange-500/20 text-amber-400'
-                : 'bg-white/5 text-white/50 hover:bg-white/10'
-            }`}
-          >
-            Other States
-          </button>
         </div>
 
         {/* Board Groups by State in 3D Glass Prism */}
@@ -4160,14 +4277,16 @@ export default function Home() {
                       className="prism-box cursor-pointer"
                       role="button"
                       tabIndex={0}
-                      onClick={() => window.open(board.website, '_blank')}
+                      onClick={() => {
+                        window.location.href = `/board/${boardDetailSlug(board.name)}`;
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
-                          window.open(board.website, '_blank');
+                          window.location.href = `/board/${boardDetailSlug(board.name)}`;
                         }
                       }}
-                      title={`Open ${board.name} website`}
+                      title={`Open ${board.name} details`}
                     >
                       <div className={`prism-inner glass-card rounded-2xl p-4 min-h-45 flex flex-col gap-3 border ${stateMeta.border}`}>
                         <div className="prism-rainbow rounded-2xl" />
@@ -4218,6 +4337,10 @@ export default function Home() {
                           <Badge className={`text-[8px] px-1.5 py-0 ${stateMeta.badge}`}>
                             {board.state}
                           </Badge>
+                          <span className="focus-meta text-white/55 text-[10px] flex items-center gap-0.5">
+                            <ExternalLink className="w-3 h-3" />
+                            Open
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -4227,6 +4350,113 @@ export default function Home() {
             </motion.div>
           );
         })}
+
+        <AnimatePresence>
+          {selectedBoard && selectedBoardMeta && (
+            <motion.div
+              id={`board-detail-${selectedBoard.name}`}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className={`glass-card rounded-2xl border ${selectedBoardMeta.border} overflow-hidden`}>
+                <div className={`bg-linear-to-r ${selectedBoard.color} p-5 sm:p-6 relative`}>
+                  <div className="absolute inset-0 bg-black/30" />
+                  <div className="relative z-10 flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-xl font-bold shadow-xl">
+                        {selectedBoard.icon}
+                      </div>
+                      <div>
+                        <h3 className="text-white text-xl sm:text-2xl font-bold">{selectedBoard.name}</h3>
+                        <p className="text-white/70 text-sm mt-1">{selectedBoard.desc}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <Badge className="bg-white/20 text-white text-[10px]">{selectedBoard.state}</Badge>
+                          <Badge className="bg-white/20 text-white text-[10px]">{selectedBoard.exams || 'Board Exams'}</Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedBoardExam(null)}
+                      className="text-white/70 hover:text-white hover:bg-white/10 shrink-0"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+
+                <CardContent className="p-5 sm:p-6 space-y-6">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <a
+                      href={selectedBoard.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-linear-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 text-sm font-medium hover:from-cyan-500/30 hover:to-blue-500/30 transition-all border border-cyan-500/10"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Open Official Board Website
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+
+                  <div>
+                    <h4 className="text-white font-semibold text-sm flex items-center gap-2 mb-3">
+                      <Megaphone className="w-4 h-4 text-amber-400" />
+                      Board Notifications
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[...(selectedBoard.notices || []).map((notice, idx) => ({
+                        id: `${selectedBoard.name}-${idx}`,
+                        title: notice,
+                        message: `${selectedBoard.name} official update`,
+                        url: selectedBoard.website,
+                      })), ...selectedBoardLiveNotifications.map((notif) => ({
+                        id: notif.id,
+                        title: notif.title,
+                        message: notif.message,
+                        url: notif.url || selectedBoard.website,
+                      }))].slice(0, 8).map((notice) => (
+                        <a
+                          key={notice.id}
+                          href={notice.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start gap-3 bg-white/5 rounded-lg p-3 border border-white/5 hover:bg-white/10 transition-colors"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                            <Bell className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-medium line-clamp-1">{notice.title}</p>
+                            <p className="text-white/40 text-[10px] line-clamp-2">{notice.message}</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-white font-semibold text-sm flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      Student Help
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {getBoardHelp(selectedBoard).map((item, idx) => (
+                        <div key={idx} className="bg-white/5 rounded-lg p-3 border border-white/5 text-white/60 text-xs leading-relaxed">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* All Board Notices Summary */}
         <div className="space-y-3">

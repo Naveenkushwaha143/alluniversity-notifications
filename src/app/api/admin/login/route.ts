@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCredentials, generateToken, verifyToken, getTokenFromCookies } from '@/lib/admin-auth';
+import { noStoreHeaders, rateLimit } from '@/lib/api-guard';
 
 // POST /api/admin/login - Login with email/password
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'admin:login', limit: 8, windowMs: 15 * 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -27,7 +31,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Login successful',
       user: { email },
-    });
+    }, { headers: noStoreHeaders() });
 
     // Set HTTP-only cookie with 24h expiry
     response.cookies.set('admin_token', token, {
@@ -74,7 +78,7 @@ export async function GET(request: NextRequest) {
       success: true,
       authenticated: true,
       user: { email: payload.email },
-    });
+    }, { headers: noStoreHeaders() });
   } catch (error) {
     console.error('Auth check error:', error);
     return NextResponse.json(

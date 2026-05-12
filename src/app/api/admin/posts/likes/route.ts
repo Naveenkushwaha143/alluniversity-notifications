@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/api-guard';
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'admin-post:likes', limit: 30, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const postId = String(body.postId || '').trim();
 

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { boundedInt, publicCacheHeaders, rateLimit } from '@/lib/api-guard';
+import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 
 // POST /api/universities - Add a new university
 export async function POST(request: NextRequest) {
   try {
+    const limited = rateLimit(request, { key: 'universities:post', limit: 5, windowMs: 60_000 });
+    if (limited) return limited;
+
     const body = await request.json();
     const { name, shortName, website, state, district, type, description, logo, color } = body;
 
@@ -55,13 +60,15 @@ export async function POST(request: NextRequest) {
 
 // GET /api/universities - Get all universities with optional filters
 export async function GET(request: NextRequest) {
+  const cacheKey = `universities:${request.nextUrl.search}`;
+
   try {
     const { searchParams } = new URL(request.url);
     const state = searchParams.get('state');
     const district = searchParams.get('district');
     const type = searchParams.get('type');
     const search = searchParams.get('search');
-    const limit = parseInt(searchParams.get('limit') || '200');
+    const limit = boundedInt(searchParams.get('limit'), 200, 1, 300);
 
     // Build where clause
     const where: Record<string, unknown> = { isActive: true };
@@ -112,20 +119,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    const payload = {
       success: true,
       message: "Universities fetched successfully!",
       total: universities.length,
       stateSummary,
       districtsByState,
       data: universities
-    }, {
-      headers: {
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-      },
+    };
+    setCachedResponse(cacheKey, payload);
+
+    return NextResponse.json(payload, {
+      headers: publicCacheHeaders(120, 600),
     });
   } catch (error) {
     console.error("Error fetching universities:", error);
+    const cached = getCachedResponse(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          ...publicCacheHeaders(30, 300),
+          'X-Data-Source': 'stale-cache',
+        },
+      });
+    }
     return NextResponse.json(
       { success: false, message: "Failed to fetch universities", error: String(error) },
       { status: 500 }

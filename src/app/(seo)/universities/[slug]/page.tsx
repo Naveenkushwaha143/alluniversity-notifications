@@ -3,12 +3,19 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { absoluteUrl, buildBreadcrumbSchema, buildFaqSchema, noticeSlug, stateSlug, stateUniversityFaqs, truncateSeo, universityFaqs, universitySlug } from '@/lib/seo-pages';
+import { RefreshUniversityNotices } from './refresh-university-notices';
 
 export const dynamic = 'force-dynamic';
 
 type UniversityPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function getParam(params: Record<string, string | string[] | undefined>, key: string) {
+  const value = params[key];
+  return Array.isArray(value) ? value[0] || '' : value || '';
+}
 
 async function getUniversity(slug: string) {
   const universities = await db.university.findMany({
@@ -61,10 +68,20 @@ export async function generateMetadata({ params }: UniversityPageProps): Promise
   };
 }
 
-export default async function UniversityDetailPage({ params }: UniversityPageProps) {
+export default async function UniversityDetailPage({ params, searchParams }: UniversityPageProps) {
   const { slug } = await params;
+  const queryParams = await searchParams || {};
   const university = await getUniversity(slug).catch(() => null);
   if (!university) notFound();
+  const selectedCategory = getParam(queryParams, 'category');
+  const query = getParam(queryParams, 'q').trim().toLowerCase();
+  const categories = Array.from(new Set(university.notices.map((notice) => notice.category))).sort((a, b) => a.localeCompare(b));
+  const filteredNotices = university.notices.filter((notice) => {
+    const noticeText = `${notice.title} ${notice.description || ''} ${notice.category}`.toLowerCase();
+    const matchesQuery = !query || noticeText.includes(query);
+    const matchesCategory = !selectedCategory || notice.category === selectedCategory;
+    return matchesQuery && matchesCategory;
+  });
 
   const faqs = [...universityFaqs(university.name), ...stateUniversityFaqs(university.state, university.name)];
   const schema = {
@@ -132,6 +149,8 @@ export default async function UniversityDetailPage({ params }: UniversityPagePro
           </div>
         </header>
 
+        <RefreshUniversityNotices universityId={university.id} universityShortName={university.shortName} />
+
         <section className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
             <p className="text-xs text-white/35">State</p>
@@ -149,13 +168,58 @@ export default async function UniversityDetailPage({ params }: UniversityPagePro
 
         <section className="mt-10">
           <h2 className="text-2xl font-bold">{university.shortName} Latest Notices</h2>
+          <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
+            <a href={`/universities/${slug}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${!selectedCategory ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+              All ({university.notices.length})
+            </a>
+            {categories.map((category) => (
+              <a key={category} href={`/universities/${slug}?category=${encodeURIComponent(category)}`} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${selectedCategory === category ? 'bg-cyan-300 text-slate-950' : 'bg-white/5 text-white/55 hover:bg-white/10'}`}>
+                {category} ({university.notices.filter((notice) => notice.category === category).length})
+              </a>
+            ))}
+          </div>
+          <form method="get" className="mt-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-xl shadow-black/10 sm:p-6">
+            <div className="grid gap-3 sm:grid-cols-[1fr_220px_auto]">
+              <label className="grid gap-1">
+                <span className="sr-only">Search notice</span>
+                <input
+                  name="q"
+                  defaultValue={getParam(queryParams, 'q')}
+                  placeholder="result, admit card, exam date..."
+                  className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
+                />
+              </label>
+              <label className="grid gap-1">
+                <span className="sr-only">Category</span>
+                <select
+                  name="category"
+                  defaultValue={selectedCategory}
+                  className="h-11 rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white outline-none focus:border-cyan-300/50"
+                >
+                  <option value="">All categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-end gap-2">
+                <button type="submit" className="h-11 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200">
+                  Filter
+                </button>
+                <a href={`/universities/${slug}`} className="inline-flex h-11 items-center rounded-xl border border-white/10 px-3 text-sm font-semibold text-white/65 hover:bg-white/10">
+                  Clear
+                </a>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-white/40">{filteredNotices.length} notices found</p>
+          </form>
           <div className="mt-4 grid gap-3">
-            {university.notices.length === 0 ? (
+            {filteredNotices.length === 0 ? (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-6 text-sm text-white/50">
-                Latest notices will appear here after the next update.
+                {university.notices.length === 0 ? 'Latest notices will appear here after the next update.' : 'No notices matched this filter.'}
               </div>
             ) : (
-              university.notices.map((notice) => (
+              filteredNotices.map((notice) => (
                 <article key={notice.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>

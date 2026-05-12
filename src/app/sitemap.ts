@@ -1,7 +1,9 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 import { siteConfig } from "@/lib/seo";
-import { importantStates, noticeSlug, stateSlug, universitySlug } from "@/lib/seo-pages";
+import { boardPages, boardSlug } from "@/lib/board-pages";
+import { EXAM_DETAILS } from "@/lib/entrance-exam-details";
+import { importantStates, noticeSlug, slugify, stateSlug, universitySlug } from "@/lib/seo-pages";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -72,6 +74,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: notice.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.78,
+      })),
+      ...Object.keys(EXAM_DETAILS).slice(0, 80).map((exam) => ({
+        url: new URL(`/entrance/${slugify(exam)}`, siteConfig.url).toString(),
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.76,
+      })),
+      ...boardPages.map((board) => ({
+        url: new URL(`/board/${boardSlug(board)}`, siteConfig.url).toString(),
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.74,
       })),
       ...posts.map((post) => ({
         url: new URL(`/blog/${post.slug}`, siteConfig.url).toString(),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { isAuthenticated } from '@/lib/admin-auth';
+import { boundedInt, publicCacheHeaders } from '@/lib/api-guard';
 
 // Helper to check admin auth for mutation endpoints
 async function requireAuth(request: NextRequest): Promise<NextResponse | null> {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const showAll = searchParams.get('all') === 'true';
     const category = searchParams.get('category');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = boundedInt(searchParams.get('limit'), 50, 1, 100);
 
     const where: Record<string, unknown> = {};
     if (category) where.category = category;
@@ -64,6 +65,8 @@ export async function GET(request: NextRequest) {
       message: 'Posts fetched successfully',
       total: sanitizedPosts.length,
       data: sanitizedPosts,
+    }, {
+      headers: isAuth ? undefined : publicCacheHeaders(30, 120),
     });
   } catch (error) {
     console.error('Error fetching admin posts:', error);
