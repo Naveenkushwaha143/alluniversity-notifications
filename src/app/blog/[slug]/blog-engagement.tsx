@@ -27,7 +27,15 @@ function formatDate(value: string | Date) {
 
 export function BlogEngagement({ postId, initialLikes, initialComments }: BlogEngagementProps) {
   const [likes, setLikes] = useState(initialLikes);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const likedPosts = JSON.parse(localStorage.getItem('likedBlogPosts') || '[]');
+      return Array.isArray(likedPosts) && likedPosts.includes(postId);
+    } catch {
+      return false;
+    }
+  });
   const [comments, setComments] = useState(initialComments);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,12 +45,15 @@ export function BlogEngagement({ postId, initialLikes, initialComments }: BlogEn
   const [notice, setNotice] = useState('');
 
   useEffect(() => {
-    try {
-      const likedPosts = JSON.parse(localStorage.getItem('likedBlogPosts') || '[]');
-      setLiked(Array.isArray(likedPosts) && likedPosts.includes(postId));
-    } catch {
-      setLiked(false);
-    }
+    const checkLiked = window.setTimeout(() => {
+      try {
+        const likedPosts = JSON.parse(localStorage.getItem('likedBlogPosts') || '[]');
+        setLiked(Array.isArray(likedPosts) && likedPosts.includes(postId));
+      } catch {
+        setLiked(false);
+      }
+    }, 0);
+    return () => window.clearTimeout(checkLiked);
   }, [postId]);
 
   async function handleLike() {

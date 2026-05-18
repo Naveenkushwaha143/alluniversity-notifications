@@ -172,13 +172,26 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    min-width: 0;
+  }
+  html {
+    overflow-x: hidden;
+    text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01" 1, "cv01" 1, "cv02" 1;
+  }
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
   }
 }
 
@@ -737,6 +750,25 @@
   background: color-mix(in srgb, var(--app-text) 9%, transparent) !important;
 }
 
+.admin-blog-editor input,
+.admin-blog-editor textarea,
+.admin-blog-editor select {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #f472b6;
+}
+
+.admin-blog-editor input::placeholder,
+.admin-blog-editor textarea::placeholder {
+  color: rgba(255, 255, 255, 0.28) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.admin-blog-editor option {
+  color: #ffffff;
+  background: #151a2b;
+}
+
 .dark .app-bg {
   background-image:
     linear-gradient(180deg, rgba(12, 19, 34, 0.78), rgba(2, 4, 10, 0.96) 42%, #02040a 100%),
@@ -951,4 +983,59 @@
 :root:not(.dark) .app-bg input::placeholder,
 :root:not(.dark) .app-bg textarea::placeholder {
   color: var(--app-text-muted);
+}
+
+/* Admin blog writer must stay readable in both light and dark themes. */
+:root:not(.dark) .app-bg .admin-blog-editor,
+.app-bg .admin-blog-editor {
+  color: #f8fafc !important;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(38, 18, 54, 0.88)) !important;
+  border-color: rgba(244, 114, 182, 0.22) !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor input,
+:root:not(.dark) .app-bg .admin-blog-editor textarea,
+:root:not(.dark) .app-bg .admin-blog-editor select,
+.app-bg .admin-blog-editor input,
+.app-bg .admin-blog-editor textarea,
+.app-bg .admin-blog-editor select {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  background-color: rgba(2, 6, 23, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  caret-color: #f472b6 !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor input::placeholder,
+:root:not(.dark) .app-bg .admin-blog-editor textarea::placeholder,
+.app-bg .admin-blog-editor input::placeholder,
+.app-bg .admin-blog-editor textarea::placeholder {
+  color: rgba(248, 250, 252, 0.42) !important;
+  -webkit-text-fill-color: rgba(248, 250, 252, 0.42) !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor button,
+.app-bg .admin-blog-editor button {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor [class*="text-white"],
+.app-bg .admin-blog-editor [class*="text-white"] {
+  color: #f8fafc !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor [class*="text-white/"],
+.app-bg .admin-blog-editor [class*="text-white/"] {
+  color: rgba(248, 250, 252, 0.68) !important;
+}
+
+:root:not(.dark) .app-bg .admin-blog-editor [class*="bg-white/"],
+.app-bg .admin-blog-editor [class*="bg-white/"] {
+  background-color: rgba(15, 23, 42, 0.72) !important;
+}
+
+.app-bg .admin-blog-editor option {
+  color: #f8fafc !important;
+  background: #151a2b !important;
 }

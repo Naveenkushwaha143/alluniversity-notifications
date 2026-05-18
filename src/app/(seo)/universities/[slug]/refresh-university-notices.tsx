@@ -24,25 +24,32 @@ export function RefreshUniversityNotices({ universityId, universityShortName }: 
     if (loading) return;
 
     setLoading(true);
-    setMessage('');
+    setMessage(`${universityShortName} official website is being checked...`);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await fetch(`/api/scrape/university/${universityId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
       });
       const data = (await response.json().catch(() => ({}))) as RefreshResponse;
 
       if (!response.ok || data.success === false) {
-        setMessage(data.message || 'Refresh abhi complete nahi ho paya. Thodi der baad try karein.');
+        setMessage(data.message || 'Refresh could not be completed. Please try again shortly.');
         return;
       }
 
       setMessage(data.message || `${universityShortName} notices refreshed.`);
       router.refresh();
-    } catch {
-      setMessage('Network error aaya. Internet/server check karke phir try karein.');
+    } catch (error) {
+      const aborted = error instanceof DOMException && error.name === 'AbortError';
+      setMessage(aborted
+        ? 'Refresh is taking too long. Please try again; the official website may be slow.'
+        : 'Network error. Check your internet or server connection and try again.');
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }
@@ -53,7 +60,7 @@ export function RefreshUniversityNotices({ universityId, universityShortName }: 
         <div>
           <h2 className="text-sm font-bold text-white">{universityShortName} latest notifications refresh</h2>
           <p className="mt-1 text-xs leading-5 text-white/55">
-            Official website se naye notices check karke list update karein.
+            Check the official website for new notices and update the list.
           </p>
         </div>
         <button

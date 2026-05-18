@@ -11,9 +11,9 @@ export default function GlobalError({
   return (
     <div className="min-h-screen app-bg flex items-center justify-center px-4">
       <div className="glass-card max-w-md rounded-xl p-6 text-center">
-        <h2 className="text-xl font-bold text-white">Page load nahi ho paaya</h2>
+        <h2 className="text-xl font-bold text-white">The page could not be loaded</h2>
         <p className="mt-2 text-sm leading-6 text-white/55">
-          Connection ya server response me issue aaya. Dobara try karein.
+          There was a connection or server response issue. Please try again.
         </p>
         <button
           type="button"

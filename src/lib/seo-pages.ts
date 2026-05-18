@@ -73,16 +73,16 @@ export function buildBreadcrumbSchema(items: { name: string; url: string }[]) {
 export function universityFaqs(universityName: string): FaqItem[] {
   return [
     {
-      question: `${universityName} result kab aayega?`,
-      answer: `${universityName} result official university website par publish hota hai. All University par latest notices aur direct official links regular update kiye jaate hain.`,
+      question: `When will the ${universityName} result be released?`,
+      answer: `${universityName} results are published on the official university website. All University regularly updates latest notices with direct official links.`,
     },
     {
-      question: `${universityName} admit card kaise download karein?`,
-      answer: `Admit card download karne ke liye official link open karein, exam or student section select karein, aur apna roll number ya registration number enter karein.`,
+      question: `How can I download the ${universityName} admit card?`,
+      answer: `Open the official link, select the exam or student section, and enter your roll number or registration number to download the admit card.`,
     },
     {
-      question: `${universityName} latest notices kahan milenge?`,
-      answer: `Latest notices is page par list hote hain. Har notice ke saath original university source link diya jaata hai.`,
+      question: `Where can I find the latest ${universityName} notices?`,
+      answer: `Latest notices are listed on this page with the original university source link for each notice.`,
     },
   ];
 }
@@ -92,86 +92,86 @@ export function stateUniversityFaqs(state: string, universityName?: string): Faq
   const stateGuides: Record<string, FaqItem[]> = {
     Bihar: [
       {
-        question: `${target} ka result kaise check karein?`,
-        answer: `Bihar ke universities me result aksar Examination, Result, Student Corner ya Notice Board section me publish hota hai. Apna roll number, registration number aur course details ready rakhein, phir official university link se result verify karein.`,
+        question: `How can I check the ${target} result?`,
+        answer: `Bihar university results are usually published in the Examination, Result, Student Corner, or Notice Board section. Keep your roll number, registration number, and course details ready, then verify the result from the official university link.`,
       },
       {
-        question: `${target} admit card download karne ke liye kya chahiye?`,
-        answer: `Admit card download ke liye registration number, roll number, date of birth ya login password ki zarurat ho sakti hai. Download karne ke baad exam date, centre, subject aur student details carefully check karein.`,
+        question: `What is required to download the ${target} admit card?`,
+        answer: `You may need your registration number, roll number, date of birth, or login password. After downloading, carefully check the exam date, centre, subject, and student details.`,
       },
       {
-        question: `Bihar university admission form aur merit list kahan milegi?`,
-        answer: `Admission form, merit list aur counselling notices university ki official website ke Admission, UG/PG Admission ya Latest Notice section me milte hain. Last date aur document list official notice se hi confirm karein.`,
+        question: `Where can I find Bihar university admission forms and merit lists?`,
+        answer: `Admission forms, merit lists, and counselling notices are available on the official university website under Admission, UG/PG Admission, or Latest Notice. Confirm deadlines and document lists from the official notice.`,
       },
       {
-        question: `Bihar university notice miss na ho iske liye kya karein?`,
-        answer: `Apni university page ko bookmark karein aur result, admit card, exam date, practical, migration, fee aur admission category ke latest notices regularly check karein.`,
+        question: `How can I avoid missing Bihar university notices?`,
+        answer: `Bookmark your university page and regularly check the latest result, admit card, exam date, practical, migration, fee, and admission notices.`,
       },
     ],
     'Uttar Pradesh': [
       {
-        question: `${target} result aur marksheet kaise check karein?`,
-        answer: `UP universities result ko official result portal, examination portal ya student login par publish karti hain. Course, semester/year, roll number aur captcha details bhar kar marksheet verify karein.`,
+        question: `How can I check the ${target} result and marksheet?`,
+        answer: `UP universities publish results on the official result portal, examination portal, or student login. Enter course, semester or year, roll number, and captcha details to verify the marksheet.`,
       },
       {
-        question: `${target} date sheet aur exam scheme kahan milegi?`,
-        answer: `Date sheet, exam scheme aur centre list official website ke Examination, Circular, Notice ya Student Corner section me milti hai. Revised schedule ke liye same page ko dobara check karna zaruri hai.`,
+        question: `Where can I find the ${target} date sheet and exam scheme?`,
+        answer: `Date sheets, exam schemes, and centre lists are available on the official website under Examination, Circular, Notice, or Student Corner. Check the same page again for revised schedules.`,
       },
       {
-        question: `UP university admit card download nahi ho raha to kya karein?`,
-        answer: `Sabse pehle official portal par registration details dobara check karein. Agar admit card abhi show nahi ho raha hai to university notice, college login ya examination branch update ka wait karein.`,
+        question: `What should I do if the UP university admit card is not downloading?`,
+        answer: `First recheck your registration details on the official portal. If the admit card is not visible yet, wait for a university notice, college login update, or examination branch update.`,
       },
       {
-        question: `UP university admission, counselling aur fee notice kaise verify karein?`,
-        answer: `Admission aur counselling notice sirf official university website ya authorised admission portal se verify karein. Fee payment se pehle notice number, date, course aur official domain zarur match karein.`,
+        question: `How can I verify UP university admission, counselling, and fee notices?`,
+        answer: `Verify admission and counselling notices only from the official university website or authorised admission portal. Before paying fees, match the notice number, date, course, and official domain.`,
       },
     ],
     Delhi: [
       {
-        question: `${target} admission update kaise check karein?`,
-        answer: `Delhi universities me admission updates official admission portal, university website aur department notice board par aate hain. CUET, merit list, counselling aur document verification dates official link se confirm karein.`,
+        question: `How can I check ${target} admission updates?`,
+        answer: `Delhi university admission updates are published on the official admission portal, university website, and department notice board. Confirm CUET, merit list, counselling, and document verification dates from the official link.`,
       },
       {
-        question: `${target} result aur exam notice kahan publish hota hai?`,
-        answer: `Result, exam form, date sheet aur admit card notices Examination, Academics, Student Portal ya Latest Notices section me publish hote hain. Login-based result ke liye enrollment number ready rakhein.`,
+        question: `Where are ${target} results and exam notices published?`,
+        answer: `Results, exam forms, date sheets, and admit card notices are published under Examination, Academics, Student Portal, or Latest Notices. Keep your enrollment number ready for login-based results.`,
       },
       {
-        question: `Delhi university students ko official link kaise identify karna chahiye?`,
-        answer: `Official link usually university ke main domain ya authorised admission/exam portal par hota hai. Social media screenshots ya forwarded PDFs ke bajay official website par notice title aur date verify karein.`,
+        question: `How should Delhi university students identify official links?`,
+        answer: `Official links are usually on the university main domain or an authorised admission or exam portal. Verify the notice title and date on the official website instead of relying on screenshots or forwarded PDFs.`,
       },
       {
-        question: `Delhi university document verification ke liye kya ready rakhein?`,
-        answer: `Marksheet, admit card, ID proof, category certificate, migration/transfer certificate, photo aur admission form receipt ready rakhein. Exact list hamesha official admission notice se match karein.`,
+        question: `What should be ready for Delhi university document verification?`,
+        answer: `Keep marksheets, admit card, ID proof, category certificate, migration or transfer certificate, photo, and admission form receipt ready. Always match the exact list with the official admission notice.`,
       },
     ],
     Haryana: [
       {
-        question: `${target} result aur reappear notice kaise check karein?`,
-        answer: `Haryana universities result, reappear, improvement aur exam notices official Examination, Result ya Student Portal section me publish karti hain. Roll number aur registration details se result verify karein.`,
+        question: `How can I check ${target} result and reappear notices?`,
+        answer: `Haryana universities publish result, reappear, improvement, and exam notices in the official Examination, Result, or Student Portal section. Verify results with roll number and registration details.`,
       },
       {
-        question: `${target} admit card aur date sheet kahan milegi?`,
-        answer: `Admit card, date sheet, practical schedule aur centre list university ke official website notice board par milti hai. Revised date sheet aane par old schedule follow na karein.`,
+        question: `Where can I find the ${target} admit card and date sheet?`,
+        answer: `Admit cards, date sheets, practical schedules, and centre lists are available on the university official website notice board. Follow the revised date sheet whenever it is released.`,
       },
       {
-        question: `Haryana university admission aur counselling notice kaise confirm karein?`,
-        answer: `Admission, merit list, counselling aur fee notices official university website ya Haryana admission portal se confirm karein. Course eligibility, fee deadline aur document list carefully check karein.`,
+        question: `How can I confirm Haryana university admission and counselling notices?`,
+        answer: `Confirm admission, merit list, counselling, and fee notices from the official university website or Haryana admission portal. Carefully check course eligibility, fee deadlines, and document lists.`,
       },
       {
-        question: `Haryana university official notice download karte waqt kya check karein?`,
-        answer: `Notice ka title, date, department, course, semester aur PDF source URL check karein. Important notices ke liye college/university examination branch se bhi confirmation le sakte hain.`,
+        question: `What should I check while downloading a Haryana university official notice?`,
+        answer: `Check the notice title, date, department, course, semester, and PDF source URL. For important notices, you may also confirm with the college or university examination branch.`,
       },
     ],
   };
 
   return stateGuides[state] || [
     {
-      question: `${target} latest result aur notices kaise check karein?`,
-      answer: `Official university website ke Result, Examination, Admission aur Notice Board section me latest updates publish hote hain. All University par direct official links ke saath student updates list kiye jaate hain.`,
+      question: `How can I check the latest ${target} results and notices?`,
+      answer: `Latest updates are published in the Result, Examination, Admission, and Notice Board sections of the official university website. All University lists student updates with direct official links.`,
     },
     {
-      question: `${target} official link kaise verify karein?`,
-      answer: `Official link open karke domain, notice title, date, course aur PDF details check karein. Final decision hamesha university ki official website ke notice par based rakhein.`,
+      question: `How can I verify the official ${target} link?`,
+      answer: `Open the official link and check the domain, notice title, date, course, and PDF details. Always base final decisions on the notice available on the official university website.`,
     },
   ];
 }
@@ -179,12 +179,12 @@ export function stateUniversityFaqs(state: string, universityName?: string): Faq
 export function noticeFaqs(universityName: string, noticeTitle: string): FaqItem[] {
   return [
     {
-      question: `${noticeTitle} official notice kaise check karein?`,
-      answer: `Official notice check karne ke liye page par diye gaye official link button ko open karein aur ${universityName} ki website par details verify karein.`,
+      question: `How can I check the official notice for ${noticeTitle}?`,
+      answer: `Open the official link button on the page and verify the details on the ${universityName} website.`,
     },
     {
-      question: `Kya ${universityName} notice information official hai?`,
-      answer: `All University public sources se notice links collect karta hai. Students ko final confirmation ke liye official university website par notice verify karna chahiye.`,
+      question: `Is the ${universityName} notice information official?`,
+      answer: `All University collects notice links from public sources. Students should verify final details on the official university website.`,
     },
   ];
 }
@@ -192,12 +192,12 @@ export function noticeFaqs(universityName: string, noticeTitle: string): FaqItem
 export function pageFaqs(topic: string): FaqItem[] {
   return [
     {
-      question: `${topic} latest update kaise check karein?`,
-      answer: `Is page par latest updates date wise show hote hain. Important notice open karke official website link se details verify karein.`,
+      question: `How can I check the latest ${topic} updates?`,
+      answer: `Latest updates are shown date-wise on this page. Open important notices and verify details from the official website link.`,
     },
     {
-      question: `${topic} official link kahan milega?`,
-      answer: `Har university, board, exam ya notice card me official website or source link diya gaya hai.`,
+      question: `Where can I find the official ${topic} link?`,
+      answer: `Every university, board, exam, or notice card includes an official website or source link.`,
     },
   ];
 }

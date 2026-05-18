@@ -3,42 +3,42 @@ import { ADDITIONAL_UNIVERSITIES } from '@/lib/additional-universities';
 
 const DEMO_BLOG_POSTS = [
   {
-    title: 'University Result Kaise Check Kare: Student Quick Guide',
-    slug: 'university-result-kaise-check-kare',
-    excerpt: 'Result, marksheet aur revaluation notice check karne ke practical steps ek jagah.',
-    content: `University result check karte time students ko sabse pehle official university website open karni chahiye. Result section aksar Examination, Student Corner, Notice Board ya Latest Updates ke andar hota hai.
+    title: 'How to Check University Results: Student Quick Guide',
+    slug: 'how-to-check-university-results',
+    excerpt: 'Practical steps to check results, marksheets, and revaluation notices in one place.',
+    content: `When checking university results, students should first open the official university website. The result section is usually available under Examination, Student Corner, Notice Board, or Latest Updates.
 
-Roll number, registration number, course, semester aur session ready rakhein. Agar result PDF me aaye to apna roll number browser search se find karein. Agar login portal par result aaye to details carefully fill karein.
+Keep your roll number, registration number, course, semester, and session ready. If the result is published as a PDF, use browser search to find your roll number. If the result is on a login portal, enter all details carefully.
 
-Result ke baad marksheet download karke name, roll number, subject code aur marks verify karein. Agar marks me doubt ho to revaluation ya scrutiny notification ki last date miss na karein.`,
+After the result is released, download the marksheet and verify your name, roll number, subject code, and marks. If you have doubts about marks, do not miss the last date for revaluation or scrutiny.`,
     author: 'All University Team',
     tags: 'result, marksheet, revaluation, university notice',
     category: 'Result',
     readTime: '2 min',
   },
   {
-    title: 'Admission Form Bharne Se Pehle Ye Documents Ready Rakhein',
+    title: 'Documents to Keep Ready Before Filling Admission Forms',
     slug: 'admission-form-documents-checklist',
-    excerpt: 'UG, PG aur entrance admission forms ke liye common document checklist.',
-    content: `Admission form bharne se pehle documents ready hone se last date par stress kam hota hai. Students ko passport size photo, signature, Aadhaar card, class 10 marksheet, class 12 marksheet, graduation marksheet, caste certificate, income certificate aur domicile certificate ready rakhna chahiye.
+    excerpt: 'Common document checklist for UG, PG, and entrance admission forms.',
+    content: `Keeping documents ready before filling an admission form reduces last-date stress. Students should keep passport size photos, signature, Aadhaar card, class 10 marksheet, class 12 marksheet, graduation marksheet, caste certificate, income certificate, and domicile certificate ready.
 
-Photo aur signature ka size university ke instruction ke hisab se compress karein. Name, date of birth aur category details certificates se match honi chahiye.
+Compress photo and signature according to the university instructions. Name, date of birth, and category details should match your certificates.
 
-Payment karne ke baad application form aur fee receipt ka PDF save karein. Counseling ya document verification me ye receipt kaam aati hai.`,
+After payment, save the application form and fee receipt PDF. This receipt is useful during counselling or document verification.`,
     author: 'All University Team',
     tags: 'admission, documents, ug admission, pg admission',
     category: 'Admission',
     readTime: '3 min',
   },
   {
-    title: 'Exam Date Sheet Aur Admit Card Notice Miss Na Karne Ka Tarika',
+    title: 'How to Avoid Missing Exam Date Sheet and Admit Card Notices',
     slug: 'exam-date-sheet-admit-card-alerts',
-    excerpt: 'Exam schedule, admit card aur center notice track karne ka simple routine.',
-    content: `Exam season me date sheet, admit card, center list aur practical exam notices bahut fast update hote hain. Isliye students ko official website ke Examination aur Notice Board section ko regularly check karna chahiye.
+    excerpt: 'A simple routine to track exam schedules, admit cards, and centre notices.',
+    content: `During exam season, date sheets, admit cards, centre lists, and practical exam notices update quickly. Students should regularly check the Examination and Notice Board sections of the official website.
 
-Course, semester aur subject wise date sheet alag-alag PDF me aa sakti hai. Date sheet download karke subject code match karein, kyunki same subject name ke multiple paper codes ho sakte hain.
+Course, semester, and subject-wise date sheets may be published in separate PDFs. Download the date sheet and match the subject code because the same subject name can have multiple paper codes.
 
-Admit card release hone ke baad print nikal kar photo, signature, exam center aur reporting time verify karein. Agar detail galat ho to college ya university exam branch se turant contact karein.`,
+After the admit card is released, print it and verify the photo, signature, exam centre, and reporting time. If any detail is incorrect, contact the college or university examination branch immediately.`,
     author: 'All University Team',
     tags: 'exam, date sheet, admit card, exam notice',
     category: 'Exam Tips',
@@ -63,10 +63,10 @@ const UNIVERSITIES: {
   { name: "Magadh University", shortName: "MU", website: "https://magadhuniversity.ac.in", state: "Bihar", district: "Gaya", type: "State", description: "A premier state university in Bodh Gaya serving southern Bihar.", logo: "📚", color: "#d97706" },
   { name: "Bihar University", shortName: "BRABU", website: "https://brabu.net", state: "Bihar", district: "Muzaffarpur", type: "State", description: "B.R. Ambedkar Bihar University in Muzaffarpur.", logo: "🎓", color: "#059669" },
   { name: "Lalit Narayan Mithila University", shortName: "LNMU", website: "https://lnmu.ac.in", state: "Bihar", district: "Darbhanga", type: "State", description: "A state university in Darbhanga for Mithila region.", logo: "📖", color: "#7c3aed" },
-  { name: "Kameshwar Singh Darbhanga Sanskrit University", shortName: "KSDSU", website: "https://ksdsu.in", state: "Bihar", district: "Darbhanga", type: "State", description: "Sanskrit university dedicated to ancient Indian learning.", logo: "🕉️", color: "#dc2626" },
-  { name: "Tilka Manjhi Bhagalpur University", shortName: "TMBU", website: "https://tmbu.ac.in", state: "Bihar", district: "Bhagalpur", type: "State", description: "State university in Bhagalpur serving eastern Bihar.", logo: "🏫", color: "#0891b2" },
+  { name: "Kameshwar Singh Darbhanga Sanskrit University", shortName: "KSDSU", website: "https://ksdsu.bihar.gov.in", state: "Bihar", district: "Darbhanga", type: "State", description: "Sanskrit university dedicated to ancient Indian learning.", logo: "🕉️", color: "#dc2626" },
+  { name: "Tilka Manjhi Bhagalpur University", shortName: "TMBU", website: "https://www.tmbuniv.ac.in/public/", state: "Bihar", district: "Bhagalpur", type: "State", description: "State university in Bhagalpur serving eastern Bihar.", logo: "🏫", color: "#0891b2" },
   { name: "Veer Kunwar Singh University", shortName: "VKSU", website: "https://vksu.ac.in", state: "Bihar", district: "Arrah", type: "State", description: "State university in Ara serving Bhojpur region.", logo: "⚔️", color: "#b91c1c" },
-  { name: "Jai Prakash University", shortName: "JPU", website: "https://jpu.ac.in", state: "Bihar", district: "Chapra", type: "State", description: "State university in Chapra, Saran district.", logo: "🏛️", color: "#65a30d" },
+  { name: "Jai Prakash University", shortName: "JPU", website: "https://www.jpv.ac.in", state: "Bihar", district: "Chapra", type: "State", description: "State university in Chapra, Saran district.", logo: "🏛️", color: "#65a30d" },
   { name: "Babasaheb Bhimrao Ambedkar Bihar University", shortName: "BBAUB", website: "https://bbrau.ac.in", state: "Bihar", district: "Muzaffarpur", type: "State", description: "State university in Muzaffarpur dedicated to Dr. Ambedkar's vision.", logo: "📖", color: "#2563eb" },
   { name: "Purnia University", shortName: "PURNIA", website: "https://purniauniversity.ac.in", state: "Bihar", district: "Purnia", type: "State", description: "State university serving Seemanchal region of Bihar.", logo: "🏫", color: "#9333ea" },
   { name: "Munger University", shortName: "MUNGER", website: "https://mungeruniversity.ac.in", state: "Bihar", district: "Munger", type: "State", description: "State university in Munger district.", logo: "🏛️", color: "#0d9488" },
@@ -87,7 +87,7 @@ const UNIVERSITIES: {
   { name: "Gaya College (Magadh University)", shortName: "GC", website: "https://gayacollege.org", state: "Bihar", district: "Gaya", type: "Constituent", description: "Premier constituent college of Magadh University.", logo: "🏫", color: "#b45309" },
   { name: "AN College Patna", shortName: "ANCOL", website: "https://ancollegepatna.org", state: "Bihar", district: "Patna", type: "Constituent", description: "A.N. College, a top constituent college of Patna University.", logo: "📚", color: "#0f766e" },
   { name: "Patna Science College", shortName: "PSC", website: "https://patnasciencecollege.ac.in", state: "Bihar", district: "Patna", type: "Constituent", description: "Premier science college under Patna University.", logo: "🔬", color: "#1d4ed8" },
-  { name: "BN Mandal University", shortName: "BNMU", website: "https://bnmu.ac.in", state: "Bihar", district: "Madhepura", type: "State", description: "State university serving Kosi-Seemanchal region.", logo: "🏫", color: "#a21caf" },
+  { name: "Bhupendra Narayan Mandal University", shortName: "BNMU", website: "https://bnmu.ac.in", state: "Bihar", district: "Madhepura", type: "State", description: "State university in Madhepura serving Kosi-Seemanchal region.", logo: "🏫", color: "#a21caf" },
 
   // ═══════════════════ HARYANA UNIVERSITIES ═══════════════════
   { name: "Maharshi Dayanand University", shortName: "MDU", website: "https://mdu.ac.in", state: "Haryana", district: "Rohtak", type: "State", description: "One of the premier state universities in Haryana, established 1976.", logo: "🏛️", color: "#dc2626" },

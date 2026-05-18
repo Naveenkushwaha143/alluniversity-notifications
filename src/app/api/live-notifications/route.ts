@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        orderBy: { datePublished: 'desc' },
+        orderBy: { createdAt: 'desc' },
         take: limit,
       }),
       db.examNotification.findMany({
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         source: notice.university.name,
         category: notice.category || 'Notification',
         state: notice.university.state,
-        timestamp: notice.datePublished.toISOString(),
+        timestamp: notice.createdAt.toISOString(),
         url: notice.sourceUrl || undefined,
         universityId: notice.universityId,
         kind: 'university',

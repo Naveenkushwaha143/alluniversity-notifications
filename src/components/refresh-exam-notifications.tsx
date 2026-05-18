@@ -36,14 +36,14 @@ export function RefreshExamNotifications({ type, title, description }: RefreshEx
       const data = (await response.json().catch(() => ({}))) as RefreshResponse;
 
       if (!response.ok || data.success === false) {
-        setMessage(data.message || 'Refresh abhi complete nahi ho paya. Thodi der baad try karein.');
+        setMessage(data.message || 'Refresh could not be completed. Please try again shortly.');
         return;
       }
 
       setMessage(data.message || 'Latest notifications refreshed.');
       router.refresh();
     } catch {
-      setMessage('Network error aaya. Internet/server check karke phir try karein.');
+      setMessage('Network error. Check your internet or server connection and try again.');
     } finally {
       setLoading(false);
     }

@@ -123,7 +123,7 @@ export default async function EntranceDetailPage({ params }: EntranceDetailPageP
         <RefreshExamNotifications
           type="NTA"
           title={`${name} latest notifications refresh`}
-          description="Entrance exam websites se naye registration, admit card aur result notifications check karein."
+          description="Check official entrance exam websites for new registration, admit card, and result notifications."
         />
 
         <section className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -146,7 +146,7 @@ export default async function EntranceDetailPage({ params }: EntranceDetailPageP
           <div className="mt-4 grid gap-3">
             {relatedNotifications.length === 0 ? (
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-white/50">
-                Is exam se related latest notification abhi database me nahi hai. Refresh Latest se official sources check kar sakte hain.
+                No latest notification related to this exam is available in the database yet. Use Refresh Latest to check official sources.
               </div>
             ) : (
               relatedNotifications.map((notification) => (

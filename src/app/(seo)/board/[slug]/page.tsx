@@ -112,7 +112,7 @@ export default async function BoardDetailPage({ params }: BoardDetailPageProps) 
         <RefreshExamNotifications
           type="BOARD"
           title={`${board.name} latest notifications refresh`}
-          description="Board websites se naye result, admit card aur date sheet notifications check karein."
+          description="Check official board websites for new result, admit card, and date sheet notifications."
         />
 
         <section className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -166,15 +166,15 @@ export default async function BoardDetailPage({ params }: BoardDetailPageProps) 
         <section className="mt-10 grid gap-4 lg:grid-cols-3">
           <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
             <h2 className="text-xl font-bold">Result</h2>
-            <p className="mt-3 text-sm leading-7 text-white/58">Roll number, school code and result date official board result portal par verify karein.</p>
+            <p className="mt-3 text-sm leading-7 text-white/58">Verify the roll number, school code, and result date on the official board result portal.</p>
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
             <h2 className="text-xl font-bold">Admit Card</h2>
-            <p className="mt-3 text-sm leading-7 text-white/58">Student name, subject list, exam centre and reporting time exam se pehle carefully check karein.</p>
+            <p className="mt-3 text-sm leading-7 text-white/58">Check the student name, subject list, exam centre, and reporting time carefully before the exam.</p>
           </div>
           <div className="rounded-lg border border-white/10 bg-white/[0.035] p-5">
             <h2 className="text-xl font-bold">Date Sheet</h2>
-            <p className="mt-3 text-sm leading-7 text-white/58">Latest revised timetable hamesha official board website se hi follow karein.</p>
+            <p className="mt-3 text-sm leading-7 text-white/58">Always follow the latest revised timetable from the official board website.</p>
           </div>
         </section>
 

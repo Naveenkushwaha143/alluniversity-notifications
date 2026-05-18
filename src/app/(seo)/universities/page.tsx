@@ -148,9 +148,14 @@ export default async function UniversitiesPage({ searchParams }: UniversitiesPag
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {universities.map((university) => (
-            <article key={university.id} className="rounded-lg border border-white/10 bg-white/[0.035] p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-white/5 text-sm font-bold text-cyan-200">
+            <article key={university.id} className="group relative cursor-pointer rounded-lg border border-white/10 bg-white/[0.035] p-4 transition hover:border-cyan-300/50 hover:bg-white/[0.07] hover:shadow-lg hover:shadow-cyan-950/20">
+              <Link
+                href={`/universities/${universitySlug(university)}`}
+                className="absolute inset-0 z-10 rounded-lg"
+                aria-label={`Open ${university.name} result and notices`}
+              />
+              <div className="pointer-events-none relative z-20 flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-white/5 text-sm font-bold text-cyan-200 transition group-hover:border-cyan-300/40 group-hover:bg-cyan-300/10 group-hover:text-white">
                   {university.logo && (university.logo.startsWith('/') || university.logo.startsWith('http')) ? (
                     <img src={university.logo} alt={`${university.name} notice board`} className="h-full w-full object-contain" />
                   ) : (
@@ -158,28 +163,25 @@ export default async function UniversitiesPage({ searchParams }: UniversitiesPag
                   )}
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-semibold leading-6">
-                    <Link href={`/universities/${universitySlug(university)}`} className="hover:text-cyan-200">
-                      {university.name} Result & Notices 2026
-                    </Link>
+                  <h2 className="text-base font-semibold leading-6 text-white transition group-hover:text-cyan-200">
+                    {university.name} Result & Notices 2026
                   </h2>
-                  <p className="mt-1 text-xs text-white/35">
+                  <p className="mt-1 text-xs text-white/35 transition group-hover:text-white/65">
                     {university.state}{university.district ? `, ${university.district}` : ''} - {university._count.notices} notices
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex gap-2">
-                <Link
-                  href={`/universities/${universitySlug(university)}`}
-                  className="inline-flex h-9 flex-1 items-center justify-center rounded-md bg-cyan-300 px-3 text-xs font-bold text-slate-950 hover:bg-cyan-200"
+              <div className="relative z-20 mt-4 flex gap-2">
+                <span
+                  className="pointer-events-none inline-flex h-9 flex-1 items-center justify-center rounded-md bg-cyan-300 px-3 text-xs font-bold text-slate-950 transition group-hover:bg-cyan-200"
                 >
                   View Updates
-                </Link>
+                </span>
                 <a
                   href={university.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-9 items-center justify-center rounded-md border border-white/10 px-3 text-xs font-semibold text-white/65 hover:bg-white/10 hover:text-white"
+                  className="relative z-30 inline-flex h-9 items-center justify-center rounded-md border border-white/10 px-3 text-xs font-semibold text-white/65 transition hover:bg-white/10 hover:text-white"
                 >
                   Official
                 </a>

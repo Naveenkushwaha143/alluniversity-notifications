@@ -8,6 +8,7 @@ import { cleanupStoredNotifications } from '@/lib/notification-cleanup';
 // Shared across bulk + single scrape to prevent API exhaustion
 let globalRateLimitUntil = 0;
 const COOLDOWN_DURATION = 10 * 60 * 1000; // 10 minutes
+const OFFICIAL_SITE_MESSAGE = 'Please click the official website.';
 
 export function getGlobalCooldownRemaining(): number {
   return Math.max(0, globalRateLimitUntil - Date.now());
@@ -39,7 +40,7 @@ export async function POST() {
       const waitMin = Math.ceil(cooldownRemaining / 60000);
       return NextResponse.json({
         success: false,
-        message: `API cooldown chal raha hai. ${waitMin} minute baad automatic try hoga.`,
+        message: `API cooldown is active. Automatic refresh will try again after ${waitMin} minutes.`,
         rateLimited: true,
         cooldownRemaining,
         cooldownMinutes: waitMin,
@@ -110,7 +111,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `Refresh complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Checked ${universitiesScraped}/${batch.length} universities, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts.`,
+      message: `Refresh complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Checked ${universitiesScraped}/${batch.length} universities, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts. ${OFFICIAL_SITE_MESSAGE}`,
       newNotices: totalNewNotices,
       newExamNotifications: examResult.newCount,
       newAdminPosts: autoPostCount,
@@ -144,7 +145,7 @@ export async function GET() {
     cooldownRemaining: remaining,
     cooldownMinutes: Math.ceil(remaining / 60000),
     message: remaining > 0
-      ? `API cooldown mein hai. ${Math.ceil(remaining / 60000)} minute baad refresh available hai.`
+      ? `API cooldown is active. Refresh will be available after ${Math.ceil(remaining / 60000)} minutes.`
       : 'Refresh available - ready to go!',
   });
 }
@@ -183,7 +184,9 @@ async function scrapeUniversity(
       if (titleExists) continue;
     }
 
-    const description = item.snippet || null;
+    const description = item.snippet
+      ? `${item.snippet} ${OFFICIAL_SITE_MESSAGE}`
+      : OFFICIAL_SITE_MESSAGE;
     const publishedDate = item.date && !Number.isNaN(item.date.getTime()) ? item.date : new Date();
     const category = detectCategory((item.name || '') + ' ' + (item.snippet || ''));
 
@@ -202,7 +205,7 @@ async function scrapeUniversity(
     // Emit real-time notification
     emitNotification({
       title: `${university.shortName}: ${item.name || 'New Notice'}`,
-      message: item.snippet || '',
+      message: description,
       source: university.name,
       category,
       state: university.state,

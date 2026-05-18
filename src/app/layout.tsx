@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "next-themes";
-import { ThemeToaster } from "@/components/theme-toaster";
 import { seoKeywords, siteConfig } from "@/lib/seo";
 import "./globals.css";
 
@@ -101,22 +99,6 @@ export default function RootLayout({
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-          try {
-            var storedTheme = localStorage.getItem('theme');
-            if (storedTheme === 'dark') {
-              document.documentElement.classList.remove('light');
-              document.documentElement.classList.add('dark');
-            } else {
-              document.documentElement.classList.remove('dark');
-              document.documentElement.classList.add('light');
-            }
-          } catch(e) { document.documentElement.classList.add('light'); }
-        `,
-          }}
-        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#f8fbff" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -135,14 +117,24 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                  setTimeout(function () {
+                    navigator.serviceWorker.register('/sw.js?v=10').catch(function () {});
+                  }, 4000);
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange={true}>
-          {children}
-          <ThemeToaster />
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

@@ -50,7 +50,7 @@ export default async function BlogPage() {
     });
   } catch (error) {
     console.error('Error loading blog page:', error);
-    loadError = 'Blog posts abhi load nahi ho paaye. Page refresh karke dobara try karein.';
+    loadError = 'Blog posts could not be loaded. Refresh the page and try again.';
   }
 
   return (
