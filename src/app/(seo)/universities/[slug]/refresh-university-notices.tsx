@@ -6,6 +6,7 @@ import { useState } from 'react';
 type RefreshUniversityNoticesProps = {
   universityId: string;
   universityShortName: string;
+  onRefreshed?: (response: RefreshResponse) => void | Promise<void>;
 };
 
 type RefreshResponse = {
@@ -15,7 +16,7 @@ type RefreshResponse = {
   rateLimited?: boolean;
 };
 
-export function RefreshUniversityNotices({ universityId, universityShortName }: RefreshUniversityNoticesProps) {
+export function RefreshUniversityNotices({ universityId, universityShortName, onRefreshed }: RefreshUniversityNoticesProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -42,6 +43,9 @@ export function RefreshUniversityNotices({ universityId, universityShortName }: 
       }
 
       setMessage(data.message || `${universityShortName} notices refreshed.`);
+      if (onRefreshed) {
+        await onRefreshed(data);
+      }
       router.refresh();
     } catch (error) {
       const aborted = error instanceof DOMException && error.name === 'AbortError';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -178,21 +178,18 @@ export function HomeClient() {
   const [blogs, setBlogs] = useState<BlogPost[]>(fallbackBlogs);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadHomeData() {
-      const loadingTimer = window.setTimeout(() => {
-        if (!cancelled) setLoading(true);
+  const loadHomeData = useCallback(async (options: { silent?: boolean } = {}) => {
+    const loadingTimer = options.silent
+      ? undefined
+      : window.setTimeout(() => {
+        setLoading(true);
       }, 300);
 
+    try {
       const [notificationResult, blogResult] = await Promise.all([
         fetchJsonWithTimeout(`/api/live-notifications?limit=8&t=${Date.now()}`),
         fetchJsonWithTimeout(`/api/blog/posts/public?limit=8&t=${Date.now()}`),
       ]);
-
-      window.clearTimeout(loadingTimer);
-      if (cancelled) return;
 
       if (
         notificationResult?.success &&
@@ -209,15 +206,23 @@ export function HomeClient() {
       ) {
         setBlogs(blogResult.data);
       }
-
+    } finally {
+      if (loadingTimer) window.clearTimeout(loadingTimer);
       setLoading(false);
     }
-
-    void loadHomeData();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    void loadHomeData();
+  }, [loadHomeData]);
+
+  useEffect(() => {
+    const reloadHomeData = () => {
+      void loadHomeData({ silent: true });
+    };
+    window.addEventListener('au-notifications-refreshed', reloadHomeData);
+    return () => window.removeEventListener('au-notifications-refreshed', reloadHomeData);
+  }, [loadHomeData]);
 
   const stats = useMemo(
     () => [

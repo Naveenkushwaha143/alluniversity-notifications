@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Bell,
   BookOpen,
@@ -28,6 +28,12 @@ const infoLinks = [
   { label: 'Blog', href: '/blog' },
 ];
 
+const fallbackTickerMessages = [
+  'Latest university notices, exam results and admissions updates',
+  'Bihar, Haryana, Delhi and Uttar Pradesh student alerts',
+  'Education boards, entrance exams and official notifications',
+];
+
 type NotificationItem = {
   id?: string;
   title?: string;
@@ -44,6 +50,15 @@ type NotificationPayload = {
   total?: number;
   data?: NotificationItem[];
   message?: string;
+};
+
+type ScrapePayload = {
+  success?: boolean;
+  message?: string;
+  newNotices?: number;
+  newExamNotifications?: number;
+  universitiesScraped?: number;
+  totalUniversities?: number;
 };
 
 function trimText(value: unknown, limit: number) {
@@ -69,7 +84,6 @@ function writeStorage(key: string, value: string) {
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   const [dark, setDark] = useState(() => readStorage('au-theme') === 'dark');
-  const [muted, setMuted] = useState(() => readStorage('au-muted') === '1');
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -77,13 +91,25 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   const [notificationMessage, setNotificationMessage] = useState('');
   const [refreshToastOpen, setRefreshToastOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const tickerMessages = useMemo(() => {
+    const latestMessages = notifications
+      .map((item) => trimText(item.title || item.message || item.source || 'Latest notification', 110))
+      .filter(Boolean);
+    const messages = latestMessages.length > 0 ? latestMessages : fallbackTickerMessages;
+    return [...messages, ...messages, ...messages, ...messages];
+  }, [notifications]);
 
-  const loadNotifications = useCallback(async (limit = 50, loadingText = 'Checking latest All University notifications...') => {
+  const loadNotifications = useCallback(async (
+    limit = 50,
+    loadingText = 'Checking latest All University notifications...',
+    options: { updateMessage?: boolean } = {},
+  ): Promise<NotificationItem[]> => {
+    const updateMessage = options.updateMessage !== false;
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 7000);
     try {
       setLoading(true);
-      setNotificationMessage(loadingText);
+      if (updateMessage) setNotificationMessage(loadingText);
       const response = await fetch(`/api/live-notifications?limit=${limit}&t=${Date.now()}`, {
         headers: { accept: 'application/json' },
         cache: 'no-store',
@@ -91,24 +117,33 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       });
       const payload = (await response.json().catch(() => ({}))) as NotificationPayload;
       if (!response.ok || payload.success === false) {
-        setNotificationMessage(payload.message || 'Latest notifications could not be loaded. Please try again.');
-        return;
+        if (updateMessage) {
+          setNotificationMessage(payload.message || 'Latest notifications could not be loaded. Please try again.');
+        }
+        return [];
       }
       if (payload?.success && Array.isArray(payload.data)) {
         const items = payload.data.slice(0, limit);
         setNotifications(items);
         const count = payload.total ?? items.length;
-        setNotificationMessage(
-          count > 0
-            ? `${count} latest notifications loaded from All University.`
-            : 'No latest notification found right now.'
-        );
+        if (updateMessage) {
+          setNotificationMessage(
+            count > 0
+              ? `${count} latest notifications loaded from All University.`
+              : 'No latest notification found right now.'
+          );
+        }
+        return items;
       }
+      return [];
     } catch (error) {
       const aborted = error instanceof DOMException && error.name === 'AbortError';
-      setNotificationMessage(aborted
-        ? 'Notification refresh is taking too long. Please try again.'
-        : 'Network error. Latest notifications could not be loaded.');
+      if (updateMessage) {
+        setNotificationMessage(aborted
+          ? 'Notification refresh is taking too long. Please try again.'
+          : 'Network error. Latest notifications could not be loaded.');
+      }
+      return [];
     } finally {
       window.clearTimeout(timer);
       setLoading(false);
@@ -127,6 +162,10 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    loadNotifications(50, 'Latest notifications loaded.');
+  }, [loadNotifications]);
+
+  useEffect(() => {
     if (!menuOpen) return;
     const close = () => setMenuOpen(false);
     window.addEventListener('resize', close);
@@ -137,12 +176,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
     const next = !dark;
     setDark(next);
     writeStorage('au-theme', next ? 'dark' : 'light');
-  }
-
-  function toggleMuted() {
-    const next = !muted;
-    setMuted(next);
-    writeStorage('au-muted', next ? '1' : '0');
   }
 
   async function openNotifications() {
@@ -156,7 +189,51 @@ export function SiteChrome({ children }: { children: ReactNode }) {
     setMenuOpen(false);
     setOpen(false);
     setRefreshToastOpen(true);
-    await loadNotifications(50, 'Refresh Now loading...');
+    setLoading(true);
+    setNotificationMessage('Scraping latest notifications from all universities...');
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 180000);
+
+    try {
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ bulk: true }),
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      const payload = (await response.json().catch(() => ({}))) as ScrapePayload;
+
+      if (!response.ok || payload.success === false) {
+        setNotificationMessage(payload.message || 'Latest notification scrape failed. Please try again.');
+        return;
+      }
+
+      const checked = payload.universitiesScraped && payload.totalUniversities
+        ? `${payload.universitiesScraped}/${payload.totalUniversities} universities checked. `
+        : '';
+      const noticeCount = payload.newNotices ?? 0;
+      const examCount = payload.newExamNotifications ?? 0;
+      const savedMessage = `${checked}${noticeCount} university notices and ${examCount} exam notifications stored.`;
+      setNotificationMessage(savedMessage);
+
+      const latestItems = await loadNotifications(50, 'Loading stored latest notifications...', { updateMessage: false });
+      const latestTitle = latestItems[0]?.title || latestItems[0]?.message || latestItems[0]?.source;
+      const latestMessage = latestTitle
+        ? `${savedMessage} Latest: ${trimText(latestTitle, 90)}`
+        : savedMessage;
+      setNotificationMessage(latestMessage);
+      window.dispatchEvent(new CustomEvent('au-notifications-refreshed'));
+    } catch (error) {
+      const aborted = error instanceof DOMException && error.name === 'AbortError';
+      setNotificationMessage(aborted
+        ? 'Scraper is taking too long. Some notices may still be loading.'
+        : 'Network error. Latest notifications could not be scraped.');
+    } finally {
+      window.clearTimeout(timer);
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -207,25 +284,14 @@ export function SiteChrome({ children }: { children: ReactNode }) {
               </div>
               <button
                 type="button"
-                aria-label="Mute notifications"
-                aria-pressed={muted}
-                onClick={toggleMuted}
-                className="mobile-header-action hidden h-10 w-10 items-center justify-center rounded-xl border sm:flex"
-              >
-                &#8977;
-              </button>
-              <button
-                type="button"
                 aria-label="Notifications"
                 onClick={openNotifications}
                 className="mobile-header-action relative z-160 flex h-12 w-12 items-center justify-center rounded-xl border touch-manipulation sm:h-10 sm:w-10"
               >
                 <Bell className="h-5 w-5 pointer-events-none" />
-                {!muted && (
-                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-linear-to-r from-red-500 to-orange-500 px-1.5 text-[11px] font-bold text-white shadow-lg shadow-red-500/40">
-                    {notifications.length || 30}
-                  </span>
-                )}
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-linear-to-r from-red-500 to-orange-500 px-1.5 text-[11px] font-bold text-white shadow-lg shadow-red-500/40">
+                  {notifications.length || 30}
+                </span>
               </button>
               <button
                 type="button"
@@ -335,23 +401,16 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       <div className={`fixed left-0 right-0 top-14 z-40 ticker-bar transition-all duration-300 sm:top-16 ${scrolled ? '-translate-y-11 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
         <div className="ticker-bar-inner">
           <div className="relative flex h-9 items-center overflow-hidden">
-            <div className="ticker-fade-left absolute bottom-0 left-0 top-0 z-20 flex items-center pl-2 pr-1">
-              <span className="relative flex h-5 w-10 items-center justify-center rounded-full bg-red-500/90 text-[9px] font-bold tracking-wider text-white shadow-lg shadow-red-500/30">
+            <div className="ticker-fade-left absolute bottom-0 left-0 top-0 z-20 flex items-center pl-3 pr-2">
+              <span className="ticker-live-badge relative flex items-center justify-center">
                 LIVE
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-ping rounded-full bg-red-300" />
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-300" />
               </span>
             </div>
             <div className="ticker-fade-right absolute bottom-0 right-0 top-0 z-10" />
-            <div className="marquee-track pl-14">
-              {[
-                'Latest Exam Results, Admissions & Board Updates',
-                'Bihar, Haryana, Delhi, Uttar Pradesh universities',
-                'Education Boards, Entrance Exams, Real-time Updates',
-                'Latest Exam Results, Admissions & Board Updates',
-                'Bihar, Haryana, Delhi, Uttar Pradesh universities',
-                'Education Boards, Entrance Exams, Real-time Updates',
-              ].map((text, index) => (
+            <div className="marquee-track pl-28 sm:pl-32">
+              {tickerMessages.map((text, index) => (
                 <Link key={`${text}-${index}`} href="/notices" className="ticker-item">
                   <span className="ticker-dot" />
                   <span className="ticker-text">{text}</span>
@@ -374,7 +433,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
                   Refresh Now
                 </p>
                 <p className="mt-0.5 text-sm font-semibold leading-5">
-                  {loading ? 'Refresh Now loading...' : notificationMessage}
+                  {notificationMessage || (loading ? 'Refresh Now loading...' : '')}
                 </p>
               </div>
               {!loading && (

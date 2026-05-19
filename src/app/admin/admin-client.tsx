@@ -2591,8 +2591,8 @@ export default function Home() {
         <div className="ticker-bar-inner">
           <div className="relative overflow-hidden h-9 flex items-center">
             {/* LIVE badge */}
-            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-2 pr-1 ticker-fade-left">
-              <span className="relative flex h-5 w-10 items-center justify-center rounded-full bg-red-500/90 text-white text-[9px] font-bold tracking-wider shadow-lg shadow-red-500/30">
+            <div className="absolute left-0 top-0 bottom-0 z-20 flex items-center pl-3 pr-2 ticker-fade-left">
+              <span className="ticker-live-badge relative flex items-center justify-center">
                 LIVE
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-300 animate-ping" />
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-300" />
@@ -2600,7 +2600,7 @@ export default function Home() {
             </div>
             {/* Fade right */}
             <div className="ticker-fade-right absolute right-0 top-0 bottom-0 z-10" />
-            <div className="marquee-track pl-14">
+            <div className="marquee-track pl-28 sm:pl-32">
               {doubled.map((item, i) => (
                 <div key={i} className="ticker-item" onClick={() => switchView('notices')}>
                   <span className="ticker-dot" />

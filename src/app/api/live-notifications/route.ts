@@ -4,6 +4,17 @@ import { MAX_STORED_NOTIFICATIONS } from '@/lib/notification-cleanup';
 import { boundedInt, publicCacheHeaders } from '@/lib/api-guard';
 import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 
+const LIVE_NOTIFICATION_TIMEOUT_MS = 4500;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('Live notifications query timed out')), timeoutMs);
+    }),
+  ]);
+}
+
 export async function GET(request: NextRequest) {
   const cacheKey = `live-notifications:${request.nextUrl.search}`;
 
@@ -11,9 +22,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = boundedInt(searchParams.get('limit'), MAX_STORED_NOTIFICATIONS, 1, MAX_STORED_NOTIFICATIONS);
 
-    const [notices, exams] = await Promise.all([
+    const [notices, exams] = await withTimeout(Promise.all([
       db.notice.findMany({
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          category: true,
+          createdAt: true,
+          sourceUrl: true,
+          universityId: true,
           university: {
             select: {
               id: true,
@@ -28,10 +46,21 @@ export async function GET(request: NextRequest) {
       }),
       db.examNotification.findMany({
         where: { isActive: true },
+        select: {
+          id: true,
+          examName: true,
+          title: true,
+          description: true,
+          boardName: true,
+          category: true,
+          state: true,
+          createdAt: true,
+          sourceUrl: true,
+        },
         orderBy: { createdAt: 'desc' },
         take: limit,
       }),
-    ]);
+    ]), LIVE_NOTIFICATION_TIMEOUT_MS);
 
     const liveItems = [
       ...notices.map((notice) => ({
@@ -84,8 +113,13 @@ export async function GET(request: NextRequest) {
       });
     }
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch live notifications', error: String(error) },
-      { status: 500 }
+      { success: true, total: 0, data: [], message: 'Latest notifications are temporarily unavailable.' },
+      {
+        headers: {
+          ...publicCacheHeaders(5, 30),
+          'X-Data-Source': 'empty-fallback',
+        },
+      }
     );
   }
 }

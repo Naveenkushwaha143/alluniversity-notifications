@@ -101,8 +101,8 @@ export async function POST(
     console.log(`Scraping: ${university.name}`);
 
     const results = await scrapeUniversityWebsite(university, {
-      maxResults: 5,
-      pageLimit: 8,
+      maxResults: 8,
+      pageLimit: 14,
       timeoutMs: 9000,
     });
 

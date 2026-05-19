@@ -1,20 +1,28 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { scrapeUniversityWebsite, type ScraperUniversity } from '@/lib/website-scraper';
 import { scrapeAndStoreExamNotifications } from '@/lib/exam-scraper';
-import { cleanupStoredNotifications } from '@/lib/notification-cleanup';
+import { cleanupOldUniversityNotices } from '@/lib/notification-cleanup';
 
 // ── Global Rate Limit Cooldown ──
 // Shared across bulk + single scrape to prevent API exhaustion
 let globalRateLimitUntil = 0;
 const COOLDOWN_DURATION = 10 * 60 * 1000; // 10 minutes
 const OFFICIAL_SITE_MESSAGE = 'Please click the official website.';
+const BULK_SCRAPE_CONCURRENCY = 15;
+const BULK_SCRAPE_DELAY_MS = 100;
 
-export function getGlobalCooldownRemaining(): number {
+type ScrapeOptions = {
+  maxResults?: number;
+  pageLimit?: number;
+  timeoutMs?: number;
+};
+
+function getGlobalCooldownRemaining(): number {
   return Math.max(0, globalRateLimitUntil - Date.now());
 }
 
-export function setGlobalCooldown() {
+function setGlobalCooldown() {
   globalRateLimitUntil = Date.now() + COOLDOWN_DURATION;
 }
 
@@ -32,7 +40,7 @@ function emitNotification(data: Record<string, unknown>) {
 }
 
 // POST /api/scrape - Trigger scraping (bulk / cron)
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     // Check global cooldown first
     const cooldownRemaining = getGlobalCooldownRemaining();
@@ -47,8 +55,19 @@ export async function POST() {
       });
     }
 
+    const body = await request.json().catch(() => ({})) as { includeExams?: boolean; limit?: number };
+    const limit = Number.isFinite(Number(body.limit))
+      ? Math.max(1, Math.min(Number(body.limit), 300))
+      : undefined;
+    const includeExams = body.includeExams === true;
+
     const universities = await db.university.findMany({
-      where: { isActive: true }
+      where: {
+        isActive: true,
+        website: { not: '' },
+      },
+      orderBy: [{ state: 'asc' }, { district: 'asc' }, { name: 'asc' }],
+      ...(limit ? { take: limit } : {}),
     });
 
     if (universities.length === 0) {
@@ -58,50 +77,95 @@ export async function POST() {
       );
     }
 
-    // ── SMART SCRAPE: Only scrape a small random batch ──
-    // Reduced from 25 to 8 to avoid hitting rate limit
-    const shuffled = universities.sort(() => Math.random() - 0.5);
-    const batch = shuffled.slice(0, 8);
+    // Bulk refresh checks every active university with a website.
+
+    const batch = universities;
 
     let totalNewNotices = 0;
     let rateLimited = false;
     let universitiesScraped = 0;
+    let failedUniversities = 0;
+    const universityResults: Array<{
+      id: string;
+      name: string;
+      shortName: string;
+      newNotices: number;
+      error?: string;
+    }> = [];
 
-    for (let i = 0; i < batch.length; i++) {
-      try {
-        // 5-second delay between each university (up from 2s)
-        if (i > 0) {
-          await new Promise(r => setTimeout(r, 5000));
-        }
+    for (let start = 0; start < batch.length; start += BULK_SCRAPE_CONCURRENCY) {
+      if (getGlobalCooldownRemaining() > 0) {
+        console.log(`Cooldown active, stopping at ${universitiesScraped}/${batch.length}`);
+        rateLimited = true;
+        break;
+      }
 
-        // Re-check cooldown before each university
-        if (getGlobalCooldownRemaining() > 0) {
-          console.log(`⏸️ Cooldown active, stopping at ${i}/${batch.length}`);
-          rateLimited = true;
-          break;
+      const chunk = batch.slice(start, start + BULK_SCRAPE_CONCURRENCY);
+      const results = await Promise.all(chunk.map(async (university) => {
+        try {
+          const newCount = await scrapeUniversity(university, {
+            maxResults: 3,
+            pageLimit: 3,
+            timeoutMs: 3000,
+          });
+          return {
+            id: university.id,
+            name: university.name,
+            shortName: university.shortName,
+            newNotices: newCount,
+          };
+        } catch (error: any) {
+          const msg = String(error?.message || error || '');
+          if (msg.includes('429') || msg.includes('Too many requests') || msg.includes('rate limit')) {
+            setGlobalCooldown();
+          }
+          console.error(`Error scraping ${university.name}:`, error);
+          return {
+            id: university.id,
+            name: university.name,
+            shortName: university.shortName,
+            newNotices: 0,
+            error: msg,
+          };
         }
+      }));
 
-        const newCount = await scrapeUniversity(batch[i]);
-        totalNewNotices += newCount;
-        universitiesScraped++;
-      } catch (error: any) {
-        const msg = String(error?.message || error || '');
-        if (msg.includes('429') || msg.includes('Too many requests') || msg.includes('rate limit')) {
-          console.log(`⚠️ Rate limit hit after ${universitiesScraped} universities. Setting 10-min cooldown.`);
-          setGlobalCooldown();
-          rateLimited = true;
-          break;
-        }
-        console.error(`Error scraping ${batch[i].name}:`, error);
+      for (const result of results) {
+        universityResults.push(result);
+        totalNewNotices += result.newNotices;
+        if (result.error) failedUniversities++;
+        else universitiesScraped++;
+      }
+
+      if (getGlobalCooldownRemaining() > 0) {
+        rateLimited = true;
+        break;
+      }
+
+      if (start + BULK_SCRAPE_CONCURRENCY < batch.length) {
+        await new Promise(r => setTimeout(r, BULK_SCRAPE_DELAY_MS));
       }
     }
 
-    const examResult = await scrapeAndStoreExamNotifications('ALL', {
-      limit: 6,
-      maxResultsPerTarget: 2,
-    });
+    const examResult = includeExams
+      ? await scrapeAndStoreExamNotifications('ALL', {
+        limit: 4,
+        maxResultsPerTarget: 1,
+      })
+      : { newCount: 0, targetsChecked: 0 };
 
-    const cleanupResult = await cleanupStoredNotifications();
+    let noticesDeleted = 0;
+    for (const result of universityResults) {
+      if (result.newNotices > 0) {
+        noticesDeleted += await cleanupOldUniversityNotices(result.id);
+      }
+    }
+    const cleanupResult = {
+      totalDeleted: noticesDeleted,
+      noticesDeleted,
+      examNotificationsDeleted: 0,
+      maxStored: 50,
+    };
 
     // Auto-create admin posts from best new notices
     let autoPostCount = 0;
@@ -111,7 +175,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: `Refresh complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Checked ${universitiesScraped}/${batch.length} universities, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts. ${OFFICIAL_SITE_MESSAGE}`,
+      message: `All University refresh complete! ${rateLimited ? '(Rate limit - cooldown set) ' : ''}Checked ${universitiesScraped}/${batch.length} universities, failed ${failedUniversities}, found ${totalNewNotices} university notices, ${examResult.newCount} exam notifications, created ${autoPostCount} admin posts. ${OFFICIAL_SITE_MESSAGE}`,
       newNotices: totalNewNotices,
       newExamNotifications: examResult.newCount,
       newAdminPosts: autoPostCount,
@@ -120,9 +184,11 @@ export async function POST() {
       deletedExamNotifications: cleanupResult.examNotificationsDeleted,
       maxStoredNotifications: cleanupResult.maxStored,
       universitiesScraped,
+      failedUniversities,
       examTargetsChecked: examResult.targetsChecked,
       batchTotal: batch.length,
       totalUniversities: universities.length,
+      universities: universityResults,
       rateLimited,
       cooldownActive: rateLimited,
       cooldownMinutes: rateLimited ? 10 : 0,
@@ -152,12 +218,13 @@ export async function GET() {
 
 // Individual university scraper with retry
 async function scrapeUniversity(
-  university: ScraperUniversity
+  university: ScraperUniversity,
+  options: ScrapeOptions = {},
 ) {
   const results = await scrapeUniversityWebsite(university, {
-    maxResults: 3,
-    pageLimit: 5,
-    timeoutMs: 8000,
+    maxResults: options.maxResults ?? 5,
+    pageLimit: options.pageLimit ?? 8,
+    timeoutMs: options.timeoutMs ?? 8000,
   });
 
   if (!Array.isArray(results) || results.length === 0) {

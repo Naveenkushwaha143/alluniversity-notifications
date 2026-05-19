@@ -70,7 +70,7 @@ const UNIVERSITIES: {
   { name: "Babasaheb Bhimrao Ambedkar Bihar University", shortName: "BBAUB", website: "https://bbrau.ac.in", state: "Bihar", district: "Muzaffarpur", type: "State", description: "State university in Muzaffarpur dedicated to Dr. Ambedkar's vision.", logo: "📖", color: "#2563eb" },
   { name: "Purnia University", shortName: "PURNIA", website: "https://purniauniversity.ac.in", state: "Bihar", district: "Purnia", type: "State", description: "State university serving Seemanchal region of Bihar.", logo: "🏫", color: "#9333ea" },
   { name: "Munger University", shortName: "MUNGER", website: "https://mungeruniversity.ac.in", state: "Bihar", district: "Munger", type: "State", description: "State university in Munger district.", logo: "🏛️", color: "#0d9488" },
-  { name: "Nalanda University", shortName: "NALANDA", website: "https://nalandauniversity.edu.in", state: "Bihar", district: "Rajgir", type: "Central", description: "An international university inspired by the ancient Nalanda Mahavihara.", logo: "🏔️", color: "#c2410c" },
+  { name: "Nalanda University", shortName: "NALANDA", website: "https://nalandauniv.edu.in", state: "Bihar", district: "Rajgir", type: "Central", description: "An international university inspired by the ancient Nalanda Mahavihara.", logo: "🏔️", color: "#c2410c" },
   { name: "Nalanda Open University", shortName: "NOU", website: "https://nalandaopenuniversity.com", state: "Bihar", district: "Patna", type: "State", description: "Open university offering distance education across Bihar.", logo: "📖", color: "#7c3aed" },
   { name: "Patliputra University", shortName: "PPU", website: "https://ppup.ac.in", state: "Bihar", district: "Patna", type: "State", description: "State university carved out of Patna University in 2018.", logo: "🏛️", color: "#0891b2" },
   { name: "Aryabhatta Knowledge University", shortName: "AKU", website: "https://akubihar.ac.in", state: "Bihar", district: "Patna", type: "State", description: "Technical and professional education university in Bihar.", logo: "🔧", color: "#2563eb" },
@@ -81,11 +81,11 @@ const UNIVERSITIES: {
   { name: "Indian Institute of Technology BHU Varanasi (Extension)", shortName: "IITBHU", website: "https://iitbhu.ac.in", state: "Bihar", district: "Patna", type: "Central", description: "IIT (BHU) Varanasi campus extension.", logo: "⚡", color: "#7c3aed" },
   { name: "All India Institute of Medical Sciences Patna", shortName: "AIIMS", website: "https://aiimspatna.edu.in", state: "Bihar", district: "Patna", type: "Central", description: "AIIMS Patna - premier medical institute.", logo: "🏥", color: "#dc2626" },
   { name: "Bihar National Law University", shortName: "BNLU", website: "https://bnlu.ac.in", state: "Bihar", district: "Patna", type: "State", description: "National law university in Patna.", logo: "⚖️", color: "#1e40af" },
-  { name: "Bihar Animal Sciences University", shortName: "BASU", website: "https://basu.in", state: "Bihar", district: "Patna", type: "State", description: "Veterinary and animal sciences university.", logo: "🦁", color: "#65a30d" },
+  { name: "Bihar Animal Sciences University", shortName: "BASU", website: "https://basu.org.in", state: "Bihar", district: "Patna", type: "State", description: "Veterinary and animal sciences university.", logo: "🦁", color: "#65a30d" },
   { name: "Shree Narayan Yoga Vedanta University", shortName: "SNYVU", website: "https://snyvu.ac.in", state: "Bihar", district: "Patna", type: "State", description: "Dedicated to yoga and vedanta studies.", logo: "🧘", color: "#9333ea" },
   { name: "University of Patna Science & Technology", shortName: "PUST", website: "https://pust.ac.in", state: "Bihar", district: "Patna", type: "State", description: "Science and technology focused university.", logo: "🔬", color: "#0891b2" },
-  { name: "Gaya College (Magadh University)", shortName: "GC", website: "https://gayacollege.org", state: "Bihar", district: "Gaya", type: "Constituent", description: "Premier constituent college of Magadh University.", logo: "🏫", color: "#b45309" },
-  { name: "AN College Patna", shortName: "ANCOL", website: "https://ancollegepatna.org", state: "Bihar", district: "Patna", type: "Constituent", description: "A.N. College, a top constituent college of Patna University.", logo: "📚", color: "#0f766e" },
+  { name: "Gaya College (Magadh University)", shortName: "GC", website: "https://gayacollege.ac.in", state: "Bihar", district: "Gaya", type: "Constituent", description: "Premier constituent college of Magadh University.", logo: "🏫", color: "#b45309" },
+  { name: "AN College Patna", shortName: "ANCOL", website: "https://www.ancpatna.ac.in", state: "Bihar", district: "Patna", type: "Constituent", description: "A.N. College, a top constituent college of Patna University.", logo: "📚", color: "#0f766e" },
   { name: "Patna Science College", shortName: "PSC", website: "https://patnasciencecollege.ac.in", state: "Bihar", district: "Patna", type: "Constituent", description: "Premier science college under Patna University.", logo: "🔬", color: "#1d4ed8" },
   { name: "Bhupendra Narayan Mandal University", shortName: "BNMU", website: "https://bnmu.ac.in", state: "Bihar", district: "Madhepura", type: "State", description: "State university in Madhepura serving Kosi-Seemanchal region.", logo: "🏫", color: "#a21caf" },
 
@@ -202,7 +202,23 @@ const UNIVERSITIES: {
 export async function seedUniversities() {
   let added = 0;
   let skipped = 0;
-  const allUniversities = [...UNIVERSITIES, ...ADDITIONAL_UNIVERSITIES];
+  const allUniversities = [...UNIVERSITIES, ...ADDITIONAL_UNIVERSITIES]
+    .filter((uni) => uni.shortName !== 'BBAUB')
+    .map((uni) => uni.shortName === 'BRABU'
+      ? {
+        ...uni,
+        name: 'Babasaheb Bhimrao Ambedkar Bihar University',
+        website: 'https://brabu.net',
+        description: "B.R. Ambedkar Bihar University in Muzaffarpur.",
+      }
+      : uni.shortName === 'PURNIA'
+        ? {
+          ...uni,
+          name: 'Purnea University',
+          website: 'https://purneau.ac.in',
+          description: 'State university serving Seemanchal region of Bihar.',
+        }
+      : uni);
 
   for (const uni of allUniversities) {
     const existing = await db.university.findFirst({
@@ -225,11 +241,30 @@ export async function seedUniversities() {
       });
       added++;
     } else {
+      await db.university.update({
+        where: { id: existing.id },
+        data: {
+          name: uni.name,
+          website: uni.website,
+          state: uni.state,
+          district: uni.district,
+          type: uni.type,
+          description: uni.description,
+          logo: uni.logo,
+          color: uni.color,
+          isActive: true,
+        },
+      });
       skipped++;
     }
   }
 
   console.log(`✅ Seed complete: ${added} new universities added, ${skipped} already existed.`);
+  await db.university.updateMany({
+    where: { shortName: 'BBAUB' },
+    data: { isActive: false },
+  });
+
   const blogPosts = await seedDemoBlogPosts();
 
   return { added, skipped, total: allUniversities.length, blogPosts };
